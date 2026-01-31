@@ -1,8 +1,8 @@
 {
-    "Group": "Example",
-    "Name": "ExamplePlugin",
-    "Version": "0.0.2",
-    "Description": "An example plugin for HyTale!",
+    "Group": "Travel",
+    "Name": "HytaleTravel",
+    "Version": "0.1.0",
+    "Description": "Adds /travel to refer players between servers via proxy listeners.",
     "Authors": [
         {
             "Name": "It's you!"
@@ -17,6 +17,6 @@
         
     },
     "DisabledByDefault": false,
-    "Main": "org.example.plugin.ExamplePlugin",
+    "Main": "com.janiel.hytale.travel.TravelPlugin",
     "IncludesAssetPack": true
 }
