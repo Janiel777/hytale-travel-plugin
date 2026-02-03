@@ -20,10 +20,18 @@ public class TravelPlugin extends JavaPlugin {
         LOGGER.atInfo().log("HytaleTravel setup start");
 
         TravelConfig cfg = TravelConfig.load();
-        LOGGER.atInfo().log("TravelConfig loaded. proxyHost=" + cfg.getProxyHost()
-                + " serverIds=" + cfg.getListenerPorts().keySet());
+        String resolvedServerId = cfg.resolveCurrentServerId();
 
-        getCommandRegistry().registerCommand(new TravelCommand(cfg));
+        LOGGER.atInfo().log("TravelConfig loaded. proxyHost=" + cfg.getProxyHost()
+                + " serverIds=" + cfg.getListenerPorts().keySet()
+                + " resolvedServerId=" + resolvedServerId
+                + " backendBaseUrl=" + cfg.getBackendBaseUrl()
+                + " backendTimeoutMs=" + cfg.getBackendTimeoutMs());
+
+        BackendClient backend = new BackendClient(cfg.getBackendBaseUrl(), cfg.getBackendTimeoutMs());
+
+        getCommandRegistry().registerCommand(new TravelCommand(cfg, backend));
+        getCommandRegistry().registerCommand(new ClaimLatestCommand(cfg, backend));
 
         LOGGER.atInfo().log("HytaleTravel setup done");
     }

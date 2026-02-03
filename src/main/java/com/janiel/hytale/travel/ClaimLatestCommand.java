@@ -15,18 +15,18 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.StringJoiner;
 
-public class TravelCommand extends AbstractPlayerCommand {
+public class ClaimLatestCommand extends AbstractPlayerCommand {
 
     private final TravelConfig cfg;
     private final BackendClient backend;
     private final RequiredArg<String> serverIdArg;
 
-    public TravelCommand(@Nonnull TravelConfig cfg, @Nonnull BackendClient backend) {
-        super("travel", "Adds /travel to refer players between servers via proxy listeners.");
+    public ClaimLatestCommand(@Nonnull TravelConfig cfg, @Nonnull BackendClient backend) {
+        super("claimlatest", "Claims latest transfer snapshot for /travel testing.");
         this.cfg = cfg;
         this.backend = backend;
 
-        // Required positional arg: /travel <serverId>
+        // Required positional arg: /claimlatest <serverId>
         this.serverIdArg = withRequiredArg("serverId", "Target server id", ArgTypes.STRING);
     }
 
@@ -39,13 +39,13 @@ public class TravelCommand extends AbstractPlayerCommand {
 
         String serverId = serverIdArg.get(context);
         if (serverId == null) {
-            context.sendMessage(Message.raw("Usage: /travel <serverId>"));
+            context.sendMessage(Message.raw("Usage: /claimlatest <serverId>"));
             return;
         }
 
         serverId = serverId.trim();
         if (serverId.isEmpty()) {
-            context.sendMessage(Message.raw("Usage: /travel <serverId>"));
+            context.sendMessage(Message.raw("Usage: /claimlatest <serverId>"));
             return;
         }
 
@@ -55,36 +55,18 @@ public class TravelCommand extends AbstractPlayerCommand {
             return;
         }
 
-        Integer port = cfg.getListenerPort(serverId);
-        if (port == null) {
-            context.sendMessage(Message.raw("Invalid listener port for serverId: " + serverId));
+        String playerUuid = PlayerIdUtil.getPlayerUuid(playerRef);
+        if (playerUuid == null) {
+            context.sendMessage(Message.raw("Could not resolve player uuid."));
             return;
         }
 
-        String host = cfg.getProxyHost();
-
-        // Create backend transfer ticket BEFORE referral.
-        String playerUuid = PlayerIdUtil.getPlayerUuid(playerRef);
-        if (playerUuid == null) {
-            context.sendMessage(Message.raw("Warning: could not resolve player uuid; backend prepare skipped."));
-        } else {
-            String snapshotJson = "{\"inventory\":[],\"gold\":0}";
-            try {
-                String fromServerId = cfg.resolveCurrentServerId();
-                if (fromServerId == null) {
-                    fromServerId = "unknown";
-                }
-                String ticketId = backend.prepare(playerUuid, fromServerId, serverId, snapshotJson);
-                context.sendMessage(Message.raw("Prepared transfer ticket: " + ticketId));
-            } catch (Exception ex) {
-                context.sendMessage(Message.raw("Warning: backend prepare failed; proceeding with travel. " + ex.getMessage()));
-            }
+        try {
+            String snapshotJson = backend.claimLatest(playerUuid, serverId);
+            context.sendMessage(Message.raw("Claimed latest snapshot for to_server=" + serverId + ": " + snapshotJson));
+        } catch (Exception ex) {
+            context.sendMessage(Message.raw("Claimlatest failed: " + ex.getMessage()));
         }
-
-        context.sendMessage(Message.raw("Referring to: " + host + ":" + port + " (serverId=" + serverId + ")"));
-
-        // Player referral (client reconnects to target host/port)
-        playerRef.referToServer(host, port);
     }
 
     private static String formatAvailable(Map<String, Integer> ports) {
