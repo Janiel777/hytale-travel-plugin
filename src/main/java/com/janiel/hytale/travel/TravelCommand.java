@@ -14,6 +14,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.UUID;
 
 public class TravelCommand extends AbstractPlayerCommand {
 
@@ -65,17 +66,36 @@ public class TravelCommand extends AbstractPlayerCommand {
 
         // Create backend transfer ticket BEFORE referral.
         String playerUuid = PlayerIdUtil.getPlayerUuid(playerRef);
+        byte[] payloadBytes = null;
+
         if (playerUuid == null) {
             context.sendMessage(Message.raw("Warning: could not resolve player uuid; backend prepare skipped."));
         } else {
-            String snapshotJson = "{\"inventory\":[],\"gold\":0}";
+            String snapshotJson = "{}";
             try {
+                // Read current persisted player JSON from this server before transferring.
+                snapshotJson = PlayerStateFiles.readSnapshotJson(cfg.getUniverseDir(), playerUuid);
+
                 String fromServerId = cfg.resolveCurrentServerId();
                 if (fromServerId == null) {
                     fromServerId = "unknown";
                 }
+
                 String ticketId = backend.prepare(playerUuid, fromServerId, serverId, snapshotJson);
                 context.sendMessage(Message.raw("Prepared transfer ticket: " + ticketId));
+
+                String secret = cfg.getPayloadHmacSecret();
+                if (secret == null || secret.isBlank()) {
+                    context.sendMessage(Message.raw("Warning: payloadHmacSecret is not set; transfer will not carry a signed ticket payload."));
+                } else {
+                    String nonce = UUID.randomUUID().toString();
+                    payloadBytes = TravelPayload.createSignedBytes(playerUuid, serverId, ticketId, secret, nonce);
+
+                    if (payloadBytes.length > 4096) {
+                        context.sendMessage(Message.raw("Warning: referral payload exceeds 4KB; sending without payload."));
+                        payloadBytes = null;
+                    }
+                }
             } catch (Exception ex) {
                 context.sendMessage(Message.raw("Warning: backend prepare failed; proceeding with travel. " + ex.getMessage()));
             }
@@ -84,7 +104,11 @@ public class TravelCommand extends AbstractPlayerCommand {
         context.sendMessage(Message.raw("Referring to: " + host + ":" + port + " (serverId=" + serverId + ")"));
 
         // Player referral (client reconnects to target host/port)
-        playerRef.referToServer(host, port);
+        if (payloadBytes != null) {
+            playerRef.referToServer(host, port, payloadBytes);
+        } else {
+            playerRef.referToServer(host, port);
+        }
     }
 
     private static String formatAvailable(Map<String, Integer> ports) {

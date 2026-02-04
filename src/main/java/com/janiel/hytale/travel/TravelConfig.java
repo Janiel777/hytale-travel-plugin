@@ -18,11 +18,19 @@ public final class TravelConfig {
 
     private final Map<Integer, String> serverIdByGamePort;
 
+    // Shared secret used to HMAC-sign referral payloads.
+    private final String payloadHmacSecret;
+
+    private final java.nio.file.Path universeDir;
+
+
     private TravelConfig(String proxyHost,
                          Map<String, Integer> listenerPorts,
                          String backendBaseUrl,
                          int backendTimeoutMs,
-                         Map<Integer, String> serverIdByGamePort) {
+                         Map<Integer, String> serverIdByGamePort,
+                         String payloadHmacSecret,
+                         java.nio.file.Path universeDir) {
 
         this.proxyHost = proxyHost;
         this.listenerPorts = Collections.unmodifiableMap(listenerPorts);
@@ -31,6 +39,11 @@ public final class TravelConfig {
         this.backendTimeoutMs = backendTimeoutMs;
 
         this.serverIdByGamePort = Collections.unmodifiableMap(serverIdByGamePort);
+
+        this.payloadHmacSecret = payloadHmacSecret;
+
+        this.universeDir = universeDir;
+
     }
 
     public String getProxyHost() {
@@ -55,6 +68,14 @@ public final class TravelConfig {
 
     public int getBackendTimeoutMs() {
         return backendTimeoutMs;
+    }
+
+    public String getPayloadHmacSecret() {
+        return payloadHmacSecret;
+    }
+
+    public java.nio.file.Path getUniverseDir() {
+        return universeDir;
     }
 
     public String resolveCurrentServerId() {
@@ -146,6 +167,12 @@ public final class TravelConfig {
             throw new IllegalStateException("travel.properties has no listenerPort.<serverId>=<port> entries");
         }
 
-        return new TravelConfig(proxyHost, ports, backendBaseUrl, backendTimeoutMs, serverIdByGamePort);
+        String payloadHmacSecret = props.getProperty("payloadHmacSecret", "").trim();
+
+        String universeDirStr = props.getProperty("universeDir", "universe").trim();
+        java.nio.file.Path universeDir = java.nio.file.Path.of(universeDirStr);
+
+
+        return new TravelConfig(proxyHost, ports, backendBaseUrl, backendTimeoutMs, serverIdByGamePort, payloadHmacSecret, universeDir);
     }
 }

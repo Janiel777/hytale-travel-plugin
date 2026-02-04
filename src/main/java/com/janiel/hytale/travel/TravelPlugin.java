@@ -30,6 +30,10 @@ public class TravelPlugin extends JavaPlugin {
 
         BackendClient backend = new BackendClient(cfg.getBackendBaseUrl(), cfg.getBackendTimeoutMs());
 
+        // Inbound transfer hook: on target server, verify referral payload and claim/apply snapshot.
+        TransferInboundBridge inbound = new TransferInboundBridge(cfg, backend);
+        inbound.register(getEventRegistry());
+
         getCommandRegistry().registerCommand(new TravelCommand(cfg, backend));
         getCommandRegistry().registerCommand(new ClaimLatestCommand(cfg, backend));
 

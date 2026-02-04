@@ -78,6 +78,30 @@ public final class BackendClient {
         return extractJsonString(res.body(), "snapshot_json");
     }
 
+    public String claim(String ticketId, String playerUuid, String toServer)
+            throws IOException, InterruptedException {
+
+        String body = "{"
+                + "\"ticket_id\":\"" + jsonEscape(ticketId) + "\","
+                + "\"player_uuid\":\"" + jsonEscape(playerUuid) + "\","
+                + "\"to_server\":\"" + jsonEscape(toServer) + "\""
+                + "}";
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl + "/transfer/claim"))
+                .timeout(Duration.ofMillis(timeoutMs))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
+        if (res.statusCode() != 200) {
+            throw new IOException("claim failed: status=" + res.statusCode() + " body=" + res.body());
+        }
+
+        return extractJsonString(res.body(), "snapshot_json");
+    }
+
     private static String jsonEscape(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\")
