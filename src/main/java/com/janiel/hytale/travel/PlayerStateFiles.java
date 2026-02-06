@@ -310,4 +310,120 @@ public final class PlayerStateFiles {
         return -1;
     }
 
+
+
+
+    // ================= Engine write probe marker helpers =================
+
+    /**
+     * Marker key used by EngineWriteProbe. The engine is expected to overwrite the file without this key,
+     * so when the key disappears we know a real engine write happened.
+     */
+    public static final String ENGINE_WRITE_PROBE_KEY = "__hytaleTravelWriteProbe";
+
+    /**
+     * Best-effort: resolve the current player JSON path (first existing candidate, otherwise the default candidate).
+     * This does NOT create backups.
+     */
+    public static Path resolvePlayerFilePath(Path universeDir, String playerUuid) throws Exception {
+        if (universeDir == null) {
+            universeDir = Path.of("universe");
+        }
+
+        List<Path> candidates = candidatePaths(universeDir, playerUuid);
+        for (Path p : candidates) {
+            if (Files.exists(p)) {
+                return p;
+            }
+        }
+
+        // Default candidate if nothing exists yet.
+        Path target = candidates.get(0);
+        Files.createDirectories(target.getParent());
+        return target;
+    }
+
+    /**
+     * Writes snapshot JSON without creating a backup. Intended for probe/marker writes to avoid spamming backups.
+     */
+    public static Path writeSnapshotJsonNoBackup(Path universeDir, String playerUuid, String snapshotJson) throws Exception {
+        Path target = resolvePlayerFilePath(universeDir, playerUuid);
+        Files.createDirectories(target.getParent());
+        Files.writeString(target, snapshotJson == null ? "{}" : snapshotJson, StandardCharsets.UTF_8);
+        return target;
+    }
+
+    /**
+     * Returns true if the top-level object contains the given key. This scans only at object depth 1.
+     */
+    public static boolean topLevelHasKey(String json, String key) {
+        if (json == null || json.isBlank() || key == null || key.isBlank()) {
+            return false;
+        }
+        Range r = findObjectFieldValueRange(json, 0, json.length(), key);
+        return r != null;
+    }
+
+    /**
+     * Upserts a top-level string field. If the key exists, its JSON value is replaced.
+     * If it does not exist, it is inserted as the first field in the root object.
+     *
+     * Note: This is a best-effort string-based manipulation to avoid depending on a JSON library.
+     */
+    public static String upsertTopLevelStringField(String json, String key, String value) {
+        if (key == null || key.isBlank()) {
+            return json == null ? "{}" : json;
+        }
+        if (json == null || json.isBlank()) {
+            json = "{}";
+        }
+
+        String quoted = quoteJsonString(value == null ? "" : value);
+
+        Range r = findObjectFieldValueRange(json, 0, json.length(), key);
+        if (r != null) {
+            // Replace value range.
+            return json.substring(0, r.start) + quoted + json.substring(r.end);
+        }
+
+        // Insert new field into root object.
+        int i = skipWs(json, 0);
+        if (i >= json.length() || json.charAt(i) != '{') {
+            // Not an object; fall back to a minimal object.
+            return "{\"" + key + "\":" + quoted + "}";
+        }
+
+        int afterBrace = i + 1;
+        int j = skipWs(json, afterBrace);
+
+        // If object is empty: "{   }"
+        if (j < json.length() && json.charAt(j) == '}') {
+            return json.substring(0, afterBrace) + "\"" + key + "\":" + quoted + json.substring(j);
+        }
+
+        // Non-empty object: insert "key":value, right after '{'
+        return json.substring(0, afterBrace) + "\"" + key + "\":" + quoted + "," + json.substring(afterBrace);
+    }
+
+    private static String quoteJsonString(String s) {
+        StringBuilder out = new StringBuilder();
+        out.append('\"');
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '\\' || c == '\"') {
+                out.append('\\').append(c);
+            } else if (c == '\n') {
+                out.append("\\n");
+            } else if (c == '\r') {
+                out.append("\\r");
+            } else if (c == '\t') {
+                out.append("\\t");
+            } else {
+                out.append(c);
+            }
+        }
+        out.append('\"');
+        return out.toString();
+    }
+
 }

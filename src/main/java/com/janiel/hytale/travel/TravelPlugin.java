@@ -34,8 +34,16 @@ public class TravelPlugin extends JavaPlugin {
         TransferInboundBridge inbound = new TransferInboundBridge(cfg, backend);
         inbound.register(getEventRegistry());
 
+        // Instrumentation: log disconnect timing vs last observed engine JSON write.
+        DisconnectLogBridge disconnectLog = new DisconnectLogBridge();
+        disconnectLog.register(getEventRegistry());
+
         getCommandRegistry().registerCommand(new TravelCommand(cfg, backend));
         getCommandRegistry().registerCommand(new ClaimLatestCommand(cfg, backend));
+
+        // Debug: probe how often the engine overwrites the persisted player JSON.
+        getCommandRegistry().registerCommand(new ProbeEngineWriteCommand(cfg));
+        getCommandRegistry().registerCommand(new StopProbeEngineWriteCommand());
 
         LOGGER.atInfo().log("HytaleTravel setup done");
     }
