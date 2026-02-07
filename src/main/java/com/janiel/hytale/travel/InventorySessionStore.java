@@ -47,4 +47,11 @@ public final class InventorySessionStore {
         if (playerUuid == null || playerUuid.isBlank()) return null;
         return SESSIONS.remove(playerUuid);
     }
+
+    /**
+     * Snapshot helper for safe iteration (avoids concurrent modification risks).
+     */
+    public static java.util.List<Session> snapshot() {
+        return new java.util.ArrayList<>(SESSIONS.values());
+    }
 }

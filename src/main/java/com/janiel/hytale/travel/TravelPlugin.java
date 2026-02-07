@@ -30,6 +30,10 @@ public class TravelPlugin extends JavaPlugin {
 
         BackendClient backend = new BackendClient(cfg.getBackendBaseUrl(), cfg.getBackendTimeoutMs());
 
+        LeaseHeartbeatService.start(backend);
+
+        CrashCheckpointService.start(cfg, backend);
+
         // Initialize final-persist gate so it can save/release after engine writes.
         FinalPersistGate.initialize(cfg, backend);
 
