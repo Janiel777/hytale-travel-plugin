@@ -52,6 +52,13 @@ public class TravelPlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new TravelCommand(cfg, backend));
         getCommandRegistry().registerCommand(new ClaimLatestCommand(cfg, backend));
 
+        PluginAssetPackRegistrar.registerSelfAsAssetPack(this);
+
+        getCommandRegistry().registerCommand(new FindAssetCommand());
+
+        getCommandRegistry().registerCommand(new DebugBlockCommand());
+        getCommandRegistry().registerCommand(new PlaceBlockCommand());
+
         // Debug: probe how often the engine overwrites the persisted player JSON.
         getCommandRegistry().registerCommand(new ProbeEngineWriteCommand(cfg));
         getCommandRegistry().registerCommand(new StopProbeEngineWriteCommand());
