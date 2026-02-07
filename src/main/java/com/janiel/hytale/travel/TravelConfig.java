@@ -81,9 +81,58 @@ public final class TravelConfig {
     public String resolveCurrentServerId() {
         Integer port = ProcessArgsUtil.tryGetIntFlagValue("--port");
         if (port == null) {
+            String bind = ProcessArgsUtil.tryGetStringFlagValue("--bind");
+            port = tryParsePortFromBind(bind);
+        }
+
+        if (port == null) {
             return null;
         }
+
         return serverIdByGamePort.get(port);
+    }
+
+    private static Integer tryParsePortFromBind(String bind) {
+        if (bind == null) {
+            return null;
+        }
+        String s = bind.trim();
+        if (s.isEmpty()) {
+            return null;
+        }
+
+        // Examples:
+        //  "0.0.0.0:7001"
+        //  ":7001"
+        //  "7001"
+        //  "127.0.0.1:7001,quic"  (if they ever add suffixes; we just take last port-like token)
+        // Strategy: take last ':' segment if present; otherwise parse whole string as int.
+        String candidate = s;
+        int lastColon = s.lastIndexOf(':');
+        if (lastColon >= 0 && lastColon + 1 < s.length()) {
+            candidate = s.substring(lastColon + 1).trim();
+        }
+
+        // If candidate has trailing junk, strip non-digits at end (best effort).
+        int end = 0;
+        while (end < candidate.length() && Character.isDigit(candidate.charAt(end))) {
+            end++;
+        }
+        if (end == 0) {
+            // maybe the whole string is digits
+            end = candidate.length();
+        }
+        String digits = candidate.substring(0, end).trim();
+
+        if (digits.isEmpty()) {
+            return null;
+        }
+
+        try {
+            return Integer.parseInt(digits);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     public static TravelConfig load() {

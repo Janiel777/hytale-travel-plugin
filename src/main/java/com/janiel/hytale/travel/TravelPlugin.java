@@ -30,9 +30,16 @@ public class TravelPlugin extends JavaPlugin {
 
         BackendClient backend = new BackendClient(cfg.getBackendBaseUrl(), cfg.getBackendTimeoutMs());
 
+        // Initialize final-persist gate so it can save/release after engine writes.
+        FinalPersistGate.initialize(cfg, backend);
+
         // Inbound transfer hook: on target server, verify referral payload and claim/apply snapshot.
         TransferInboundBridge inbound = new TransferInboundBridge(cfg, backend);
         inbound.register(getEventRegistry());
+
+        // Inventory session acquire on connect: pulls backend snapshot and applies inventory before load.
+        InventoryAcquireBridge invAcquire = new InventoryAcquireBridge(cfg, backend);
+        invAcquire.register(getEventRegistry());
 
         // Instrumentation: log disconnect timing vs last observed engine JSON write.
         DisconnectLogBridge disconnectLog = new DisconnectLogBridge();

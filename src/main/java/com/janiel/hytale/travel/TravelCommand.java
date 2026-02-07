@@ -64,40 +64,34 @@ public class TravelCommand extends AbstractPlayerCommand {
 
         String host = cfg.getProxyHost();
 
-        // Create backend transfer ticket BEFORE referral.
+        // Referral payload is signed so the client cannot tamper with the intended target server.
+        // Inventory persistence is handled via backend inventory sessions:
+        //  - lock is acquired on connect (setup stage)
+        //  - save+release happens after the engine's final JSON persist on disconnect/travel
         String playerUuid = PlayerIdUtil.getPlayerUuid(playerRef);
         byte[] payloadBytes = null;
 
         if (playerUuid == null) {
-            context.sendMessage(Message.raw("Warning: could not resolve player uuid; backend prepare skipped."));
+            context.sendMessage(Message.raw("Warning: could not resolve player uuid; sending travel without signed payload."));
         } else {
-            String snapshotJson = "{}";
-            try {
-                // Read current persisted player JSON from this server before transferring.
-                snapshotJson = PlayerStateFiles.readSnapshotJson(cfg.getUniverseDir(), playerUuid);
-
-                String fromServerId = cfg.resolveCurrentServerId();
-                if (fromServerId == null) {
-                    fromServerId = "unknown";
-                }
-
-                String ticketId = backend.prepare(playerUuid, fromServerId, serverId, snapshotJson);
-                context.sendMessage(Message.raw("Prepared transfer ticket: " + ticketId));
-
-                String secret = cfg.getPayloadHmacSecret();
-                if (secret == null || secret.isBlank()) {
-                    context.sendMessage(Message.raw("Warning: payloadHmacSecret is not set; transfer will not carry a signed ticket payload."));
-                } else {
+            String secret = cfg.getPayloadHmacSecret();
+            if (secret == null || secret.isBlank()) {
+                context.sendMessage(Message.raw("Warning: payloadHmacSecret is not set; travel will not carry a signed payload."));
+            } else {
+                try {
                     String nonce = UUID.randomUUID().toString();
-                    payloadBytes = TravelPayload.createSignedBytes(playerUuid, serverId, ticketId, secret, nonce);
+
+                    // ticketId is intentionally empty in the inventory-session flow.
+                    payloadBytes = TravelPayload.createSignedBytes(playerUuid, serverId, "", secret, nonce);
 
                     if (payloadBytes.length > 4096) {
                         context.sendMessage(Message.raw("Warning: referral payload exceeds 4KB; sending without payload."));
                         payloadBytes = null;
                     }
+                } catch (Exception ex) {
+                    context.sendMessage(Message.raw("Warning: could not build referral payload; sending without payload. " + ex.getMessage()));
+                    payloadBytes = null;
                 }
-            } catch (Exception ex) {
-                context.sendMessage(Message.raw("Warning: backend prepare failed; proceeding with travel. " + ex.getMessage()));
             }
         }
 

@@ -93,14 +93,29 @@ public final class EngineWriteProbe {
         if (!running.compareAndSet(true, false)) {
             return;
         }
+
         try {
-            scheduler.shutdownNow();
+            // Note: Avoid shutdownNow() here; stop() can be called from the scheduler thread itself.
+            // shutdownNow() interrupts the thread and causes FINAL_PERSIST save to fail with InterruptedException.
+            scheduler.shutdown();
+
+            try {
+                if (!scheduler.awaitTermination(250, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                scheduler.shutdownNow();
+            }
+
         } catch (Exception ignored) {
         }
+
         LOGGER.atInfo().log("EngineWriteProbe stopped. playerUuid=" + playerUuid
                 + " reads=" + readCount
                 + " engineWritesDetected=" + engineWriteCount);
     }
+
 
     public boolean isRunning() {
         return running.get();

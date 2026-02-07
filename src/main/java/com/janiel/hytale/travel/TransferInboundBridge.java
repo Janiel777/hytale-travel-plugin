@@ -125,20 +125,11 @@ public final class TransferInboundBridge {
                 return;
             }
 
-            String snapshotJson;
-            try {
-                snapshotJson = backend.claim(parsed.getTicketId(), parsed.getPlayerUuid(), parsed.getToServer());
-            } catch (Exception ex) {
-                LOGGER.atWarning().log("Inbound referral claim failed ticket=" + parsed.getTicketId() + ": " + ex.getMessage());
-                return;
-            }
-
-            Path universeDir = cfg.getUniverseDir();
-            Path written = PlayerStateFiles.writeInventoryOnlySnapshot(universeDir, parsed.getPlayerUuid(), snapshotJson);
-
-            LOGGER.atInfo().log("Inbound referral applied. player_uuid=" + parsed.getPlayerUuid()
-                    + " ticket=" + parsed.getTicketId()
-                    + " wrote=" + written);
+            // New flow: inventory is sourced from backend via /inventory/session/acquire on setup connect.
+            // The referral payload is still validated to prevent tampering with target server id.
+            LOGGER.atInfo().log("Inbound referral accepted. player_uuid=" + parsed.getPlayerUuid()
+                    + " to_server=" + parsed.getToServer()
+                    + " ticket=" + parsed.getTicketId());
         } catch (Throwable t) {
             LOGGER.atWarning().log("Inbound referral handler failed: " + t);
         }

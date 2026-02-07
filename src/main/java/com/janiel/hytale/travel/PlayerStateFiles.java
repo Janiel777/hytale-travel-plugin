@@ -133,12 +133,30 @@ public final class PlayerStateFiles {
 
         Range invBase = findValueRangeAtPath(baseJson, "Components", "Player", "Inventory");
         if (invBase == null) {
-            // If base doesn't have the path, do nothing (safer than overwriting whole file)
-            return baseJson;
+            // If base doesn't have the path yet (common early in lifecycle or if file didn't exist),
+            // create a minimal structure containing Components.Player.Inventory from the snapshot.
+            return buildMinimalWithInventory(invValue);
         }
 
         return baseJson.substring(0, invBase.start) + invValue + baseJson.substring(invBase.end);
     }
+
+    private static String buildMinimalWithInventory(String invValue) {
+        if (invValue == null || invValue.isBlank()) {
+            invValue = "{}";
+        }
+
+        // Minimal safe payload: only the inventory path.
+        // We intentionally do NOT copy other fields (position, stats, etc.).
+        return "{"
+                + "\"Components\":{"
+                +   "\"Player\":{"
+                +     "\"Inventory\":" + invValue
+                +   "}"
+                + "}"
+                + "}";
+    }
+
 
     private static final class Range {
         final int start;

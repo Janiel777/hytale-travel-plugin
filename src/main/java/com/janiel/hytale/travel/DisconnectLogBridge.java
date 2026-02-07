@@ -82,16 +82,29 @@ public final class DisconnectLogBridge {
 
             long deltaMs = (lastWriteMs <= 0L) ? -1L : (nowMs - lastWriteMs);
 
+            String connectionKey = ConnectionKeyUtil.tryExtractConnectionKey(event);
+
             LOGGER.atInfo().log("DISCONNECT_EVENT playerUuid=" + playerUuid
                     + " at=" + Instant.ofEpochMilli(nowMs)
                     + " lastEngineWriteAt=" + (lastWriteMs <= 0L ? "<none>" : Instant.ofEpochMilli(lastWriteMs))
                     + " deltaSinceWriteMs=" + deltaMs
                     + " engineWriteCount=" + writeCount
-                    + " eventClass=" + event.getClass().getName());
+                    + " eventClass=" + event.getClass().getName()
+                    + " connectionKey=" + (connectionKey == null ? "<none>" : connectionKey));
 
             // Arm the gate so the next ENGINE_WRITE_DETECTED can be treated as the "final persist" after disconnect.
             if (playerUuid != null && !playerUuid.isBlank()) {
-                FinalPersistGate.markDisconnect(playerUuid, nowMs);
+                FinalPersistGate.markDisconnect(playerUuid, nowMs, connectionKey);
+            }
+
+            String msg = tryExtractDisconnectMessage(event);
+            if (msg != null) {
+                String lower = msg.toLowerCase();
+                if (lower.contains("logged in again")) {
+                    LOGGER.atInfo().log("DISCONNECT_IGNORED_DUPLICATE_LOGIN playerUuid=" + playerUuid
+                            + " message=\"" + msg + "\"");
+                    return;
+                }
             }
 
         } catch (Throwable t) {
@@ -153,4 +166,33 @@ public final class DisconnectLogBridge {
         }
         return null;
     }
+
+    private static String tryExtractDisconnectMessage(Object event) {
+        if (event == null) return null;
+
+        // Best-effort: scan common method names seen in kick/disconnect events.
+        String[] methodNames = new String[] {
+                "getMessage",
+                "getKickMessage",
+                "getDisconnectMessage",
+                "getReason",
+                "getReasonMessage",
+                "getCloseReason"
+        };
+
+        for (String name : methodNames) {
+            try {
+                java.lang.reflect.Method m = event.getClass().getMethod(name);
+                Object v = m.invoke(event);
+                if (v == null) continue;
+                String s = String.valueOf(v).trim();
+                if (!s.isEmpty()) return s;
+            } catch (Throwable ignored) {
+                // ignore
+            }
+        }
+
+        return null;
+    }
+
 }
