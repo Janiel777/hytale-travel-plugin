@@ -1,0 +1,16 @@
+$C = "../../Common.ui";
+
+Button #Button {
+  Padding: (Full: 10);
+  LayoutMode: Left;
+
+  Style: (
+    Hovered: (
+      Background: #000000(0.20),
+    )
+  );
+
+  Label #Name {
+    Style: (RenderBold: true);
+  }
+}

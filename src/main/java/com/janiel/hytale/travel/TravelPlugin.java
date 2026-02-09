@@ -52,6 +52,8 @@ public class TravelPlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new TravelCommand(cfg, backend));
         getCommandRegistry().registerCommand(new ClaimLatestCommand(cfg, backend));
 
+        getCommandRegistry().registerCommand(new PortalUiCommand(cfg));
+
         PluginAssetPackRegistrar.registerSelfAsAssetPack(this);
 
         getCommandRegistry().registerCommand(new FindAssetCommand());
