@@ -4,11 +4,25 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
+import com.hypixel.hytale.server.core.modules.interaction.interaction.config.server.OpenCustomUIInteraction;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Function;
+
 import javax.annotation.Nonnull;
 
 public class TravelPlugin extends JavaPlugin {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+
+    /**
+     * Page Id used by the portal block JSON (OpenCustomUI interaction).
+     * Keep this stable: assets reference this string.
+     */
+    private static final String PORTAL_UI_PAGE_ID = "JanielTravelPortal";
 
     public TravelPlugin(@Nonnull JavaPluginInit init) {
         super(init);
@@ -53,6 +67,19 @@ public class TravelPlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new ClaimLatestCommand(cfg, backend));
 
         getCommandRegistry().registerCommand(new PortalUiCommand(cfg));
+
+        // Register the CustomUI page supplier used by the portal block's OpenCustomUI interaction.
+        // This lets the engine open our server-side custom page via asset JSON, without polling.
+        OpenCustomUIInteraction.registerSimple(
+                this,
+                TravelPlugin.class,
+                PORTAL_UI_PAGE_ID,
+                (Function<PlayerRef, com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage>) (playerRef) -> {
+                    List<String> serverIds = new ArrayList<>(cfg.getListenerPorts().keySet());
+                    Collections.sort(serverIds);
+                    return PortalChoicePage.create(playerRef, cfg, serverIds, 0);
+                }
+        );
 
         PluginAssetPackRegistrar.registerSelfAsAssetPack(this);
 

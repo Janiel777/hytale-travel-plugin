@@ -9,6 +9,9 @@
   ],
   "BlockType": {
     "AmbientSoundEventId": "SFX_Portal_Neutral",
+    "Flags": {
+      "IsUsable": true
+    },
     "DrawType": "Model",
     "Material": "Solid",
     "Opacity": "Transparent",
@@ -43,7 +46,29 @@
           "Y": 2.5
         }
       }
-    ]
+    ],
+    "Interactions": {
+      "CollisionEnter": {
+        "Interactions": [
+          {
+            "Type": "OpenCustomUI",
+            "Page": {
+              "Id": "JanielTravelPortal"
+            }
+          }
+        ]
+      },
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "OpenCustomUI",
+            "Page": {
+              "Id": "JanielTravelPortal"
+            }
+          }
+        ]
+      }
+    }
   },
   "PlayerAnimationsId": "Block",
   "Tags": {
