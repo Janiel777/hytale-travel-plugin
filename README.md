@@ -67,6 +67,28 @@ Client → Proxy → Server → Backend API → PostgreSQL
 
 ---
 
+
+## Related Repositories
+
+This plugin is part of a larger distributed multi-server system.  
+The complete architecture also includes:
+
+- **Hytale Servers Proxy**  
+  https://github.com/Janiel777/hytale-servers-proxy  
+  Custom proxy layer responsible for client connection routing between
+  multiple Hytale server instances using a QUIC-based transport model.
+
+- **Hytale Backend Service**  
+  https://github.com/Janiel777/hytale-backend  
+  FastAPI + PostgreSQL backend that implements lease-based inventory locking,
+  optimistic concurrency control, and persistent player state management.
+
+Together, these repositories form a coordinated distributed system
+handling network routing, backend synchronization, and deterministic
+inventory ownership across multiple servers.
+
+---
+
 ## Why This Project Matters
 
 This project demonstrates practical experience with:
