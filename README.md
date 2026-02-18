@@ -1,73 +1,80 @@
 
 # Hytale Travel Plugin
 
+## Demo
+
+A short video demonstration of the system in action is available here:
+
+**Video:** [Google Drive Video Demo](https://drive.google.com/file/d/1pmrmzChyOOiOM251Cs3RnO_GB15D3oFP/view?usp=sharing)
+
+The video shows:
+- Portal interaction and UI
+- Cross-server world travel
+- Inventory synchronization across servers
+- Lock acquisition and release flow
+
+---
+
 ## Overview
 
-Hytale Travel Plugin is a custom multi-world travel system designed for a distributed Hytale server architecture.
+Hytale Travel Plugin is a distributed multi-server system that allows players to travel between game worlds while preserving inventory consistency through backend-enforced locking.
 
-It enables players to move between different server instances (worlds) while maintaining a consistent and synchronized inventory state through a centralized backend.
+Rather than functioning as a standalone game modification, this project demonstrates coordinated behavior across:
 
-The plugin integrates with:
+- Multiple Hytale server instances  
+- A custom proxy layer for connection routing  
+- A centralized backend REST API that enforces inventory ownership  
 
-- A custom proxy layer for connection routing
-- A lock-based backend service for inventory authority
-- Multiple Hytale server instances
-
-This creates a seamless cross-server travel experience.
+The objective is to ensure that only one server instance has authority over a player's inventory at any given time.
 
 ---
 
-## What This Plugin Does
+## System Workflow
 
-The plugin introduces:
+When a player interacts with a custom portal block:
 
-- A custom portal block
-- A server-side UI that lists available worlds
-- Secure cross-server travel handling
-- Inventory session synchronization
+1. A server-side UI opens listing available destination worlds.
+2. The current server calls the backend API to acquire a database lock for the player session.
+3. The server saves the inventory state and releases ownership.
+4. The proxy redirects the player connection to the selected server.
+5. The destination server acquires the lock and restores the player state.
 
-When a player interacts with a portal:
-
-1. A custom UI opens displaying available destination servers.
-2. The current server saves and releases the player's inventory session.
-3. The proxy redirects the player to the selected server.
-4. The destination server acquires ownership of the inventory session.
-
-This guarantees that only one server has authority over a player's inventory at any time.
+This workflow prevents race conditions and concurrent modifications across server instances.
 
 ---
 
-## Architecture Role
+## Architecture Components
 
-This plugin is part of a larger multi-server ecosystem:
+This repository contains the Travel Plugin (client-facing logic and UI).  
+The full system also includes:
 
-- Travel Plugin (this repository) → Handles UI and server travel logic
-- Proxy → Routes players between server instances
-- Backend → Enforces inventory session locking
+- **Proxy Layer** – Handles network-level routing of client connections using a QUIC-based protocol.
+- **Backend API** – Manages session locking using a PostgreSQL-backed acquire → save → release lifecycle.
+- **Database** – Stores persistent player state and enforces exclusive ownership through locking.
 
-The plugin acts as the bridge between in-game interactions and distributed server coordination.
+Client → Proxy → Server → Backend API → PostgreSQL
 
 ---
 
 ## Technical Highlights
 
-- Java / Gradle project
-- Custom Hytale server plugin
-- Asset-driven UI interactions (no per-tick polling logic)
-- Database-backed lock validation via HTTP backend
-- Deterministic inventory ownership across servers
-- Clean separation of concerns between gameplay, networking, and persistence
+- Java / Gradle-based server plugin  
+- REST API integration with backend services  
+- PostgreSQL-backed lock mechanism  
+- Explicit race condition handling between server instances  
+- Deterministic data ownership across distributed components  
+- Docker-based local environment for backend and database services  
 
 ---
 
 ## Why This Project Matters
 
-This project demonstrates:
+This project demonstrates practical experience with:
 
-- Distributed system design within a game environment
-- Cross-server state synchronization
-- Network-level coordination with a proxy layer
-- Backend-driven authority enforcement
-- Scalable multi-instance architecture
+- Service integration via APIs  
+- Distributed system coordination  
+- Database-backed locking strategies  
+- Network-level routing and client-server architecture  
+- Maintaining data consistency across multiple service boundaries  
 
-It showcases practical experience building coordinated systems across multiple services rather than a standalone game modification.
+It reflects applied integration and system design principles within a multi-service environment.
