@@ -15,6 +15,13 @@ The video shows:
 
 ---
 
+## System Architecture
+
+<p align="center">
+  <img src="./Hytale_Arq.drawio.svg" width="800"/>
+</p>
+
+---
 ## Overview
 
 Hytale Travel Plugin is a distributed multi-server system that allows players to travel between game worlds while preserving inventory consistency through backend-enforced locking.
