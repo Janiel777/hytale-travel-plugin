@@ -9,7 +9,8 @@
         }
     ],
     "Website": "example.org",
-    "ServerVersion": "*",
+    "ServerVersion": "2026.02.19-1a311a592",
+    "TargetServerVersion": "2026.02.19-1a311a592",
     "Dependencies": {
         
     },

@@ -16,7 +16,7 @@ public final class PluginAssetPackRegistrar {
             String packName = plugin.getIdentifier().toString() + ":assets";
 
             AssetModule assets = AssetModule.get();
-            assets.registerPack(packName, plugin.getFile(), plugin.getManifest());
+            assets.registerPack(packName, plugin.getFile(), plugin.getManifest(), true);
 
             // Important: this triggers the pending asset stores to ingest new assets.
             assets.initPendingStores();
