@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import com.hypixel.hytale.server.core.universe.Universe;
 
 import javax.annotation.Nonnull;
 
@@ -62,6 +63,26 @@ public class TravelPlugin extends JavaPlugin {
         // Instrumentation: log disconnect timing vs last observed engine JSON write.
         DisconnectLogBridge disconnectLog = new DisconnectLogBridge();
         disconnectLog.register(getEventRegistry());
+        InstanceReturnBridge.register(getEventRegistry());
+
+        // IMPORTANT:
+        // DrainPlayerFromWorldEvent / AddPlayerToWorldEvent are fired on each World's EventRegistry,
+        // not necessarily on the plugin's EventRegistry.
+        // Hook all currently loaded worlds once the Universe is ready.
+        // IMPORTANT:
+// DrainPlayerFromWorldEvent / AddPlayerToWorldEvent are fired on each World's EventRegistry.
+// Hook all currently loaded worlds once Universe is ready (if this patchline exposes a non-null future).
+        try {
+            java.util.concurrent.CompletableFuture<Void> ready = Universe.get().getUniverseReady();
+            if (ready != null) {
+                ready.thenRun(InstanceReturnBridge::registerToAllLoadedWorlds);
+            } else {
+                LOGGER.atInfo().log("UniverseReady future was null during setup; using lazy world hooks on travel.");
+            }
+        } catch (Exception e) {
+            LOGGER.atWarning().log("Failed to attach UniverseReady hook: " + e);
+        }
+
 
         getCommandRegistry().registerCommand(new TravelCommand(cfg, backend));
         getCommandRegistry().registerCommand(new ClaimLatestCommand(cfg, backend));
