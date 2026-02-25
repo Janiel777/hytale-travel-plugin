@@ -11,6 +11,7 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayer
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.logger.HytaleLogger;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -22,6 +23,7 @@ import java.util.stream.Stream;
 public class FindAssetCommand extends AbstractPlayerCommand {
 
     private final RequiredArg<String> needleArg;
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     public FindAssetCommand() {
         super("findasset", "Debug: searches base assets for a substring in file path or file contents (.json/.xml).");
@@ -48,51 +50,85 @@ public class FindAssetCommand extends AbstractPlayerCommand {
         final String needle = needleRaw.trim();
         final String needleLower = needle.toLowerCase();
 
-        Path root = AssetModule.get().getBaseAssetPack().getRoot();
-        context.sendMessage(Message.raw("Searching base assets for: " + needle));
+        // IMPORTANT:
+        // - chatLimit: keep player chat readable
+        // - logLimit: allow many results in server console for copy/paste
+        final int chatLimit = 30;
+        final int logLimit = 2000;
 
-        int[] found = new int[]{0};
+        Path root = AssetModule.get().getBaseAssetPack().getRoot();
+
+        context.sendMessage(Message.raw("Searching base assets for: " + needle + " (logging to server console)"));
+        LOGGER.atInfo().log("[findasset] Searching base assets for: " + needle);
+        LOGGER.atInfo().log("[findasset] Root: " + root);
+
+        int[] totalMatches = new int[]{0};
+        int[] chatShown = new int[]{0};
 
         try (Stream<Path> paths = Files.walk(root)) {
             paths
                     .filter(p -> {
                         String s = p.toString().toLowerCase();
-                        return s.endsWith(".json") || s.endsWith(".xml");
+                        // Added .ui because we need to locate UI layouts
+                        return s.endsWith(".json") || s.endsWith(".xml") || s.endsWith(".ui");
                     })
                     .limit(400000)
                     .forEach(p -> {
-                        if (found[0] >= 20) {
-                            return;
-                        }
                         try {
                             String relPath = root.relativize(p).toString();
                             String relLower = relPath.toLowerCase();
 
+                            boolean matched = false;
+                            String matchedKind = null;
+
                             // 1) Match by file path/name
                             if (relLower.contains(needleLower)) {
-                                found[0]++;
-                                context.sendMessage(Message.raw("FOUND (path): " + relPath));
+                                matched = true;
+                                matchedKind = "path";
+                            } else {
+                                // 2) Match by file contents (skip huge files)
+                                long size = Files.size(p);
+                                if (size <= 2_000_000L) {
+                                    String text = Files.readString(p, StandardCharsets.UTF_8);
+                                    if (text.contains(needle)) {
+                                        matched = true;
+                                        matchedKind = "content";
+                                    }
+                                }
+                            }
+
+                            if (!matched) {
                                 return;
                             }
 
-                            // 2) Match by file contents (skip huge files)
-                            long size = Files.size(p);
-                            if (size > 2_000_000L) {
-                                return;
+                            totalMatches[0]++;
+
+                            // Log to server console for copy/paste
+                            if (totalMatches[0] <= logLimit) {
+                                LOGGER.atInfo().log("[findasset] FOUND (" + matchedKind + "): " + relPath);
+                            } else if (totalMatches[0] == logLimit + 1) {
+                                LOGGER.atInfo().log("[findasset] Log limit reached (" + logLimit + "). Suppressing additional log lines.");
                             }
 
-                            String text = Files.readString(p, StandardCharsets.UTF_8);
-                            if (text.contains(needle)) {
-                                found[0]++;
-                                context.sendMessage(Message.raw("FOUND (content): " + relPath));
+                            // Show a smaller subset to player chat
+                            if (chatShown[0] < chatLimit) {
+                                chatShown[0]++;
+                                context.sendMessage(Message.raw("FOUND (" + matchedKind + "): " + relPath));
+                            } else if (chatShown[0] == chatLimit) {
+                                chatShown[0]++;
+                                context.sendMessage(Message.raw("Too many matches. See server console for full output."));
                             }
+
                         } catch (IOException ignored) {
                         }
                     });
         } catch (IOException e) {
             context.sendMessage(Message.raw("findasset failed: " + e.getClass().getSimpleName()));
+            LOGGER.atWarning().log("[findasset] Failed: " + e.getClass().getSimpleName(), e);
+            return;
         }
 
-        context.sendMessage(Message.raw("Done. Matches: " + found[0]));
+        context.sendMessage(Message.raw("Done. Matches: " + totalMatches[0]));
+        LOGGER.atWarning().log("[findasset] Done. Matches: " + totalMatches[0]);
     }
 }
