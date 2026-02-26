@@ -101,6 +101,9 @@ public class TravelPlugin extends JavaPlugin {
 
         getCommandRegistry().registerCommand(new PortalUiCommand(cfg));
 
+        // Temporary dev command: open Mutations custom page.
+        getCommandRegistry().registerCommand(new MutationsUiCommand());
+
         // Register the CustomUI page supplier used by the portal block's OpenCustomUI interaction.
         // This lets the engine open our server-side custom page via asset JSON, without polling.
         OpenCustomUIInteraction.registerSimple(
