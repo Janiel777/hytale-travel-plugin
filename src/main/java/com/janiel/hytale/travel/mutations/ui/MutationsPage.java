@@ -16,11 +16,27 @@ public final class MutationsPage extends ChoiceBasePage {
     public static MutationsPage create(@Nonnull PlayerRef playerRef) {
 
         int blocksMined = MutationsRepository.getBlocksBroken(playerRef.getUuid());
-        int nextLevelAt = 20;
+
+        int level;
+        int nextLevelAt;
+
+        if (blocksMined < 20) {
+            level = 0;
+            nextLevelAt = 20;
+        } else if (blocksMined < 40) {
+            level = 1;
+            nextLevelAt = 40;
+        } else if (blocksMined < 60) {
+            level = 2;
+            nextLevelAt = 60;
+        } else {
+            level = 3;
+            nextLevelAt = 60; // Cap de debug
+        }
 
         String name = "Stonecutter's Pace";
         String description = "Mine blocks to permanently increase mining speed.";
-        String levelLabel = "Level 0";
+        String levelLabel = "Level " + level;
         String progressLabel = blocksMined + "/" + nextLevelAt + " blocks";
 
         ChoiceElement[] elements = new ChoiceElement[] {
