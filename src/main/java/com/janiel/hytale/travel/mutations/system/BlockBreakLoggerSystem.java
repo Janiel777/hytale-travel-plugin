@@ -15,6 +15,7 @@ import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.janiel.hytale.travel.mutations.persistence.MutationsRepository;
+import com.janiel.hytale.travel.mutations.persistence.MutationsState;
 import com.janiel.hytale.travel.mutations.ui.MutationsPage;
 
 import java.util.UUID;
@@ -52,7 +53,7 @@ public final class BlockBreakLoggerSystem extends EntityEventSystem<EntityStore,
 
         UUID playerUuid = playerRef.getUuid();
 
-        int newCount = MutationsRepository.incrementBlocksBroken(playerUuid);
+        MutationsState state = MutationsRepository.incrementBlocksBrokenAndGetState(playerUuid);
 
         Vector3i pos = event.getTargetBlock();
         LOGGER.atInfo().log("BreakBlockEvent: entityId=" + entityId
@@ -60,9 +61,9 @@ public final class BlockBreakLoggerSystem extends EntityEventSystem<EntityStore,
                 + " pos=" + pos
                 + " blockType=" + event.getBlockType()
                 + " itemInHand=" + event.getItemInHand()
-                + " blocksBroken=" + newCount);
+                + " blocksBroken=" + state.getBlocksBroken()
+                + " miningLevel=" + state.getMiningLevel());
 
-        // Si el jugador tiene la MutationsPage abierta, re-abrimos la misma página para reflejar el contador nuevo.
         Player player = store.getComponent(ref, Player.getComponentType());
         if (player == null) {
             return;

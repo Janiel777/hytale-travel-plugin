@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.janiel.hytale.travel.mutations.MutationsProgression;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -21,47 +22,90 @@ public final class MutationsRepository {
             .create();
 
     private static final String FIELD_BLOCKS_BROKEN = "blocksBroken";
+    private static final String FIELD_MINING_LEVEL = "miningLevel";
 
     private MutationsRepository() {
     }
 
+    public static MutationsState getOrLoadState(UUID playerUuid) {
+        return MutationsCache.getOrLoad(playerUuid);
+    }
+
     public static int getBlocksBroken(UUID playerUuid) {
-        synchronized (LOCK) {
-            JsonObject obj = loadOrCreate(playerUuid);
-            if (obj.has(FIELD_BLOCKS_BROKEN) && obj.get(FIELD_BLOCKS_BROKEN).isJsonPrimitive()) {
-                try {
-                    return obj.get(FIELD_BLOCKS_BROKEN).getAsInt();
-                } catch (Exception ignored) {
-                    // Fallthrough to 0 below.
-                }
-            }
-            return 0;
-        }
+        return getOrLoadState(playerUuid).getBlocksBroken();
+    }
+
+    public static int getMiningLevel(UUID playerUuid) {
+        return getOrLoadState(playerUuid).getMiningLevel();
     }
 
     public static int incrementBlocksBroken(UUID playerUuid) {
+        return incrementBlocksBrokenAndGetState(playerUuid).getBlocksBroken();
+    }
+
+    public static MutationsState incrementBlocksBrokenAndGetState(UUID playerUuid) {
         synchronized (LOCK) {
-            JsonObject obj = loadOrCreate(playerUuid);
+            MutationsState before = MutationsCache.getOrLoad(playerUuid);
 
-            int current = 0;
-            if (obj.has(FIELD_BLOCKS_BROKEN) && obj.get(FIELD_BLOCKS_BROKEN).isJsonPrimitive()) {
-                try {
-                    current = obj.get(FIELD_BLOCKS_BROKEN).getAsInt();
-                } catch (Exception ignored) {
-                    current = 0;
-                }
-            }
+            int nextBlocksBroken = before.getBlocksBroken() + 1;
+            int nextLevel = MutationsProgression.computeMiningLevel(nextBlocksBroken);
 
-            int next = current + 1;
-            obj.addProperty(FIELD_BLOCKS_BROKEN, next);
+            MutationsState after = new MutationsState(nextBlocksBroken, nextLevel);
 
-            save(playerUuid, obj);
-            return next;
+            saveState(playerUuid, after);
+            MutationsCache.put(playerUuid, after);
+
+            return after;
         }
     }
 
+    // Package-private: usado por MutationsCache para cargar 1 vez desde disco
+    static MutationsState loadState(UUID playerUuid) {
+        synchronized (LOCK) {
+            JsonObject obj = loadOrCreate(playerUuid);
+
+            int blocksBroken = readInt(obj, FIELD_BLOCKS_BROKEN, 0);
+            int computedLevel = MutationsProgression.computeMiningLevel(blocksBroken);
+
+            int level = readInt(obj, FIELD_MINING_LEVEL, computedLevel);
+            if (level != computedLevel) {
+                // Mantener archivo consistente con la progresión actual
+                level = computedLevel;
+                obj.addProperty(FIELD_MINING_LEVEL, level);
+                save(playerUuid, obj);
+            } else if (!obj.has(FIELD_MINING_LEVEL)) {
+                obj.addProperty(FIELD_MINING_LEVEL, level);
+                save(playerUuid, obj);
+            }
+
+            if (!obj.has(FIELD_BLOCKS_BROKEN)) {
+                obj.addProperty(FIELD_BLOCKS_BROKEN, blocksBroken);
+                save(playerUuid, obj);
+            }
+
+            return new MutationsState(blocksBroken, level);
+        }
+    }
+
+    private static int readInt(JsonObject obj, String field, int fallback) {
+        if (obj.has(field) && obj.get(field).isJsonPrimitive()) {
+            try {
+                return obj.get(field).getAsInt();
+            } catch (Exception ignored) {
+                return fallback;
+            }
+        }
+        return fallback;
+    }
+
+    private static void saveState(UUID playerUuid, MutationsState state) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty(FIELD_BLOCKS_BROKEN, state.getBlocksBroken());
+        obj.addProperty(FIELD_MINING_LEVEL, state.getMiningLevel());
+        save(playerUuid, obj);
+    }
+
     private static Path getMutationsDir() {
-        // Universe.get().getPath() -> carpeta raíz del universe
         return Universe.get().getPath().resolve("mutations");
     }
 
@@ -76,6 +120,7 @@ public final class MutationsRepository {
         if (!Files.exists(file)) {
             JsonObject fresh = new JsonObject();
             fresh.addProperty(FIELD_BLOCKS_BROKEN, 0);
+            fresh.addProperty(FIELD_MINING_LEVEL, 0);
             save(playerUuid, fresh);
             return fresh;
         }
@@ -86,18 +131,15 @@ public final class MutationsRepository {
             if (parsed == null) {
                 JsonObject fresh = new JsonObject();
                 fresh.addProperty(FIELD_BLOCKS_BROKEN, 0);
+                fresh.addProperty(FIELD_MINING_LEVEL, 0);
                 save(playerUuid, fresh);
                 return fresh;
             }
-            if (!parsed.has(FIELD_BLOCKS_BROKEN)) {
-                parsed.addProperty(FIELD_BLOCKS_BROKEN, 0);
-                save(playerUuid, parsed);
-            }
             return parsed;
         } catch (Exception e) {
-            // Si el JSON está corrupto o ilegible, lo reseteamos de forma segura
             JsonObject fresh = new JsonObject();
             fresh.addProperty(FIELD_BLOCKS_BROKEN, 0);
+            fresh.addProperty(FIELD_MINING_LEVEL, 0);
             save(playerUuid, fresh);
             return fresh;
         }
@@ -116,7 +158,6 @@ public final class MutationsRepository {
             Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException atomicMoveNotSupported) {
             try {
-                // Fallback sin ATOMIC_MOVE (por si el FS no lo soporta)
                 Files.writeString(file, json, StandardCharsets.UTF_8);
                 try {
                     Files.deleteIfExists(tmp);
