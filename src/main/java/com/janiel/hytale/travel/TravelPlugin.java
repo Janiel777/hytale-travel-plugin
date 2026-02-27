@@ -24,7 +24,7 @@ import com.janiel.hytale.travel.persistence.FinalPersistGate;
 import com.janiel.hytale.travel.services.CrashCheckpointService;
 import com.janiel.hytale.travel.services.LeaseHeartbeatService;
 import com.janiel.hytale.travel.ui.PortalChoicePage;
-import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
+import com.janiel.hytale.travel.mutations.system.DamageBlockLoggerSystem;
 import com.janiel.hytale.travel.mutations.system.BlockBreakLoggerSystem;
 
 import javax.annotation.Nonnull;
@@ -133,6 +133,10 @@ public class TravelPlugin extends JavaPlugin {
         // Mutations (debug): log when a block is broken
         getEntityStoreRegistry().registerSystem(new BlockBreakLoggerSystem());
         LOGGER.atInfo().log("Mutations: BlockBreakLoggerSystem registered (BreakBlockEvent)");
+
+        // Mutations (debug): log when a block is damaged (mining tick while holding click)
+        getEntityStoreRegistry().registerSystem(new DamageBlockLoggerSystem());
+        LOGGER.atInfo().log("Mutations: DamageBlockLoggerSystem registered (DamageBlockEvent)");
 
         LOGGER.atInfo().log("HytaleTravel setup done");
     }
