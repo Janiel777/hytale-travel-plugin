@@ -17,6 +17,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.janiel.hytale.travel.mutations.persistence.MutationsRepository;
 import com.janiel.hytale.travel.mutations.persistence.MutationsState;
 import com.janiel.hytale.travel.mutations.ui.MutationsPage;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 
 import java.util.UUID;
 
@@ -52,6 +53,23 @@ public final class BlockBreakLoggerSystem extends EntityEventSystem<EntityStore,
         }
 
         UUID playerUuid = playerRef.getUuid();
+
+        ItemStack itemInHand = event.getItemInHand();
+        if (itemInHand == null) {
+            // Example: placing torch can trigger BreakBlockEvent with null hand item; do not count.
+            return;
+        }
+
+        String itemId = itemInHand.getItemId();
+        if (itemId == null || !itemId.startsWith("Tool_Pickaxe_")) {
+            // Only count breaks done with a pickaxe for the mining mutation.
+            return;
+        }
+
+        Object blockId = event.getBlockType().getId();
+        if (blockId != null && "Empty".equals(blockId.toString())) {
+            return;
+        }
 
         MutationsState state = MutationsRepository.incrementBlocksBrokenAndGetState(playerUuid);
 
