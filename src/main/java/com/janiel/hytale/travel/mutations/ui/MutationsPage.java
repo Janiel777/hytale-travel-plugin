@@ -3,15 +3,10 @@ package com.janiel.hytale.travel.mutations.ui;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.choices.ChoiceBasePage;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.choices.ChoiceElement;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.janiel.hytale.travel.mutations.persistence.MutationsRepository;
 
 import javax.annotation.Nonnull;
 
-/**
- * Custom page that lists player mutations.
- *
- * Commit 1 goal: show the page with static content.
- * Persistence + mining detection will be added in later commits.
- */
 public final class MutationsPage extends ChoiceBasePage {
 
     private MutationsPage(@Nonnull PlayerRef playerRef, @Nonnull ChoiceElement[] elements) {
@@ -20,10 +15,7 @@ public final class MutationsPage extends ChoiceBasePage {
 
     public static MutationsPage create(@Nonnull PlayerRef playerRef) {
 
-        // Static data for now.
-        // Later: load from MutationsRepository (JSON) and compute level/progress.
-
-        int blocksMined = 0;
+        int blocksMined = MutationsRepository.getBlocksBroken(playerRef.getUuid());
         int nextLevelAt = 20;
 
         String name = "Stonecutter's Pace";
