@@ -24,6 +24,8 @@ import com.janiel.hytale.travel.persistence.FinalPersistGate;
 import com.janiel.hytale.travel.services.CrashCheckpointService;
 import com.janiel.hytale.travel.services.LeaseHeartbeatService;
 import com.janiel.hytale.travel.ui.PortalChoicePage;
+import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
+import com.janiel.hytale.travel.mutations.system.BlockBreakLoggerSystem;
 
 import javax.annotation.Nonnull;
 
@@ -127,6 +129,10 @@ public class TravelPlugin extends JavaPlugin {
         // Debug: probe how often the engine overwrites the persisted player JSON.
         getCommandRegistry().registerCommand(new ProbeEngineWriteCommand(cfg));
         getCommandRegistry().registerCommand(new StopProbeEngineWriteCommand());
+
+        // Mutations (debug): log when a block is broken
+        getEntityStoreRegistry().registerSystem(new BlockBreakLoggerSystem());
+        LOGGER.atInfo().log("Mutations: BlockBreakLoggerSystem registered (BreakBlockEvent)");
 
         LOGGER.atInfo().log("HytaleTravel setup done");
     }
