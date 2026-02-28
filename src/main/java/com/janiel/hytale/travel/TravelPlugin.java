@@ -26,6 +26,7 @@ import com.janiel.hytale.travel.services.LeaseHeartbeatService;
 import com.janiel.hytale.travel.ui.PortalChoicePage;
 import com.janiel.hytale.travel.mutations.system.DamageBlockLoggerSystem;
 import com.janiel.hytale.travel.mutations.system.BlockBreakLoggerSystem;
+import com.janiel.hytale.travel.mutations.system.StaminaDepletedLoggerSystem;
 
 import javax.annotation.Nonnull;
 
@@ -137,6 +138,10 @@ public class TravelPlugin extends JavaPlugin {
         // Mutations (debug): log when a block is damaged (mining tick while holding click)
         getEntityStoreRegistry().registerSystem(new DamageBlockLoggerSystem());
         LOGGER.atInfo().log("Mutations: DamageBlockLoggerSystem registered (DamageBlockEvent)");
+
+        // Debug: log when a player runs out of stamina (edge-triggered)
+        getEntityStoreRegistry().registerSystem(new StaminaDepletedLoggerSystem());
+        LOGGER.atInfo().log("Debug: StaminaDepletedLoggerSystem registered (DelayedEntitySystem)");
 
         LOGGER.atInfo().log("HytaleTravel setup done");
     }
