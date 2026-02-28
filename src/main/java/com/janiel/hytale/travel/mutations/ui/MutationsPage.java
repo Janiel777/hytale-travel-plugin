@@ -33,17 +33,18 @@ public final class MutationsPage extends ChoiceBasePage {
         int nextStaminaLevelAt = MutationsProgression.staminaDepletionsGoalForLevel(staminaDelayLevel);
 
         int extraDelaySeconds = MutationsProgression.staminaExtraDelaySecondsForLevel(staminaDelayLevel);
+        float regenMultiplier = MutationsProgression.staminaRegenSpeedMultiplierForLevel(staminaDelayLevel);
 
         String staminaName = "Stamina Recovery";
-        String staminaDescription = "Deplete stamina to reduce the regen delay penalty.";
+        String staminaDescription = "Deplete stamina to reduce the regen delay penalty and increase regen speed.";
         String staminaLevelLabel = "Level " + staminaDelayLevel;
 
         String staminaProgressLabel;
         if (staminaDelayLevel >= 3) {
-            staminaProgressLabel = staminaDepletions + " depletions (no extra delay)";
+            staminaProgressLabel = staminaDepletions + " depletions (x" + regenMultiplier + " regen, no extra delay)";
         } else {
             staminaProgressLabel = staminaDepletions + "/" + nextStaminaLevelAt
-                    + " depletions (-" + extraDelaySeconds + "s extra delay)";
+                    + " depletions (-" + extraDelaySeconds + "s extra delay, x" + regenMultiplier + " regen)";
         }
 
         ChoiceElement[] elements = new ChoiceElement[] {

@@ -21,14 +21,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Adds an extra stamina regeneration delay ONLY when stamina fully depletes (hits ~0).
- *
- * Assets stay default. We only manipulate the StaminaRegenDelay stat value at runtime.
- *
- * Key detail from logs:
- * - At the exact EMPTY edge, delay may still be 0.
- * - Shortly after, the engine sets delay negative (e.g., -0.75).
- * We apply our override AFTER we observe delay < 0 while stamina is still empty.
+ * Stamina Recovery:
+ * - On full depletion: apply extra regen delay override (decreases with level).
+ * - During regeneration: amplify observed positive stamina regen by a level-based multiplier.
  */
 public final class StaminaDepletionExtraRegenDelaySystem extends DelayedEntitySystem<EntityStore> {
 
@@ -36,12 +31,16 @@ public final class StaminaDepletionExtraRegenDelaySystem extends DelayedEntitySy
 
     private static final float EMPTY_EPSILON = 0.0001f;
     private static final float NEGATIVE_EPSILON = -0.0001f;
+    private static final float POSITIVE_EPSILON = 0.0001f;
 
     private static final String STAMINA_REGEN_DELAY_STAT_ID = "StaminaRegenDelay";
 
     private static final class State {
         boolean wasEmpty;
         boolean appliedForThisDepletion;
+
+        boolean hasLastStamina;
+        float lastStamina;
     }
 
     private static final Map<UUID, State> STATE_BY_PLAYER = new ConcurrentHashMap<>();
@@ -92,7 +91,11 @@ public final class StaminaDepletionExtraRegenDelaySystem extends DelayedEntitySy
         State st = STATE_BY_PLAYER.computeIfAbsent(uuid, k -> new State());
 
         float staminaValue = stamina.get();
+        float staminaMax = stamina.getMax();
         boolean isEmpty = staminaValue <= EMPTY_EPSILON;
+
+        // Always attempt regen acceleration first (it is safe: only amplifies positive regen).
+        applyStaminaRegenAccelerationIfNeeded(statMap, stamina, regenDelay, uuid, st);
 
         // Reset when we leave empty.
         if (!isEmpty) {
@@ -107,7 +110,7 @@ public final class StaminaDepletionExtraRegenDelaySystem extends DelayedEntitySy
             st.wasEmpty = true;
             st.appliedForThisDepletion = false;
 
-            // We intentionally DO NOT write here, because your logs show delay may still be 0 at the edge.
+            // We intentionally DO NOT write here, because delay may still be 0 at the edge.
             return;
         }
 
@@ -118,14 +121,14 @@ public final class StaminaDepletionExtraRegenDelaySystem extends DelayedEntitySy
         // Apply only after the engine has already pushed delay negative (e.g., -0.75).
         float delayValue = regenDelay.get();
         if (delayValue < NEGATIVE_EPSILON) {
-            // Increment depletions exactly once per depletion (right before we mark "applied").
+
+            // Increment depletions exactly once per depletion.
             MutationsState stateAfter = MutationsRepository.incrementStaminaDepletionsAndGetState(uuid);
 
             int staminaDelayLevel = stateAfter.getStaminaDelayLevel();
             int extraDelaySeconds = MutationsProgression.staminaExtraDelaySecondsForLevel(staminaDelayLevel);
 
-            // With default assets: StaminaRegenDelay regenerates +0.1 each 0.1s => +1.0 per second.
-            // So setting delay to -N.0 gives ~N seconds until it reaches 0.
+            // Setting delay to -N.0 gives ~N seconds until it reaches 0 (based on default behavior observed).
             float targetDelayValue = -1.0f * (float) extraDelaySeconds;
 
             int delayIndex = regenDelay.getIndex();
@@ -152,5 +155,65 @@ public final class StaminaDepletionExtraRegenDelaySystem extends DelayedEntitySy
                         + " depletions=" + stateAfter.getStaminaDepletions());
             }
         }
+    }
+
+    private static void applyStaminaRegenAccelerationIfNeeded(
+            EntityStatMap statMap,
+            EntityStatValue stamina,
+            EntityStatValue regenDelay,
+            UUID uuid,
+            State st
+    ) {
+        float staminaValue = stamina.get();
+        float staminaMax = stamina.getMax();
+
+        // Initialize tracking.
+        if (!st.hasLastStamina) {
+            st.hasLastStamina = true;
+            st.lastStamina = staminaValue;
+            return;
+        }
+
+        float prev = st.lastStamina;
+        st.lastStamina = staminaValue;
+
+        // Only consider positive regen.
+        float gained = staminaValue - prev;
+        if (gained <= POSITIVE_EPSILON) {
+            return;
+        }
+
+        // Don't accelerate while the engine is still in regen delay (negative delay).
+        float delayValue = regenDelay.get();
+        if (delayValue < NEGATIVE_EPSILON) {
+            return;
+        }
+
+        // If already full, nothing to do.
+        if (staminaValue >= staminaMax - POSITIVE_EPSILON) {
+            return;
+        }
+
+        // Read cached mutations state (no disk hit; repository uses cache).
+        MutationsState state = MutationsRepository.getOrLoadState(uuid);
+        int level = state.getStaminaDelayLevel();
+        float multiplier = MutationsProgression.staminaRegenSpeedMultiplierForLevel(level);
+
+        if (multiplier <= 1.0f + POSITIVE_EPSILON) {
+            return;
+        }
+
+        float extra = gained * (multiplier - 1.0f);
+        if (extra <= POSITIVE_EPSILON) {
+            return;
+        }
+
+        float newValue = staminaValue + extra;
+        if (newValue > staminaMax) {
+            newValue = staminaMax;
+        }
+
+        int staminaIndex = stamina.getIndex();
+        statMap.setStatValue(staminaIndex, newValue);
     }
 }

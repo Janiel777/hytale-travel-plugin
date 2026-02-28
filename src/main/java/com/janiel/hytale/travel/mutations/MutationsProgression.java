@@ -93,4 +93,26 @@ public final class MutationsProgression {
         }
         return 0;
     }
+
+    /**
+     * Multiplier applied to the observed positive stamina regeneration.
+     *
+     * Proposed:
+     * Level 0 -> 1.00x
+     * Level 1 -> 1.20x
+     * Level 2 -> 1.40x
+     * Level 3 -> 1.60x
+     */
+    public static float staminaRegenSpeedMultiplierForLevel(int level) {
+        if (level <= 0) {
+            return 1.00f;
+        }
+        if (level == 1) {
+            return 1.20f;
+        }
+        if (level == 2) {
+            return 1.40f;
+        }
+        return 1.60f;
+    }
 }
