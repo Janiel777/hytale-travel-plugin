@@ -8,22 +8,31 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.protocol.SoundCategory;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.PageManager;
 import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import com.janiel.hytale.travel.mutations.persistence.MutationsRepository;
 import com.janiel.hytale.travel.mutations.persistence.MutationsState;
 import com.janiel.hytale.travel.mutations.ui.MutationsPage;
-import com.hypixel.hytale.server.core.inventory.ItemStack;
 
 import java.util.UUID;
 
 public final class BlockBreakLoggerSystem extends EntityEventSystem<EntityStore, BreakBlockEvent> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+
+    // Exists in assets_tree.txt:
+    // Server/Audio/SoundEvents/SFX/Crafting/SFX_Workbench_Upgrade_Complete_Default.json :contentReference[oaicite:2]{index=2}
+    private static final String LEVEL_UP_SOUND_ID = "SFX_Discovery_Z1_Medium";
 
     public BlockBreakLoggerSystem() {
         super(BreakBlockEvent.class);
@@ -71,7 +80,13 @@ public final class BlockBreakLoggerSystem extends EntityEventSystem<EntityStore,
             return;
         }
 
+        int beforeLevel = MutationsRepository.getMiningLevel(playerUuid);
         MutationsState state = MutationsRepository.incrementBlocksBrokenAndGetState(playerUuid);
+
+        int afterLevel = state.getMiningLevel();
+        if (afterLevel > beforeLevel) {
+            showMiningLevelUp(playerRef, afterLevel);
+        }
 
         Vector3i pos = event.getTargetBlock();
         LOGGER.atInfo().log("BreakBlockEvent: entityId=" + entityId
@@ -95,6 +110,22 @@ public final class BlockBreakLoggerSystem extends EntityEventSystem<EntityStore,
         CustomUIPage current = pages.getCustomPage();
         if (current instanceof MutationsPage) {
             pages.openCustomPage(ref, store, MutationsPage.create(playerRef));
+        }
+    }
+
+    private static void showMiningLevelUp(PlayerRef playerRef, int newLevel) {
+        // Title overlay (primary + secondary)
+        EventTitleUtil.showEventTitleToPlayer(
+                playerRef,
+                Message.raw("Mining Mutation"),
+                Message.raw("Level " + newLevel),
+                true
+        );
+
+        // Sound (plays only if the ID exists in the SoundEvent asset map)
+        int soundIndex = SoundEvent.getAssetMap().getIndexOrDefault(LEVEL_UP_SOUND_ID, SoundEvent.EMPTY_ID);
+        if (soundIndex != SoundEvent.EMPTY_ID) {
+            SoundUtil.playSoundEvent2dToPlayer(playerRef, soundIndex, SoundCategory.UI);
         }
     }
 }
