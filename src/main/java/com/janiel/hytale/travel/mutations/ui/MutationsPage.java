@@ -18,17 +18,37 @@ public final class MutationsPage extends ChoiceBasePage {
     public static MutationsPage create(@Nonnull PlayerRef playerRef) {
 
         MutationsState state = MutationsRepository.getOrLoadState(playerRef.getUuid());
-        int blocksMined = state.getBlocksBroken();
-        int level = state.getMiningLevel();
-        int nextLevelAt = MutationsProgression.miningGoalForLevel(level);
 
-        String name = "Stonecutter's Pace";
-        String description = "Mine blocks to permanently increase mining speed.";
-        String levelLabel = "Level " + level;
-        String progressLabel = blocksMined + "/" + nextLevelAt + " blocks";
+        int blocksMined = state.getBlocksBroken();
+        int miningLevel = state.getMiningLevel();
+        int nextMiningLevelAt = MutationsProgression.miningGoalForLevel(miningLevel);
+
+        String miningName = "Stonecutter's Pace";
+        String miningDescription = "Mine blocks to permanently increase mining speed.";
+        String miningLevelLabel = "Level " + miningLevel;
+        String miningProgressLabel = blocksMined + "/" + nextMiningLevelAt + " blocks";
+
+        int staminaDepletions = state.getStaminaDepletions();
+        int staminaDelayLevel = state.getStaminaDelayLevel();
+        int nextStaminaLevelAt = MutationsProgression.staminaDepletionsGoalForLevel(staminaDelayLevel);
+
+        int extraDelaySeconds = MutationsProgression.staminaExtraDelaySecondsForLevel(staminaDelayLevel);
+
+        String staminaName = "Stamina Recovery";
+        String staminaDescription = "Deplete stamina to reduce the regen delay penalty.";
+        String staminaLevelLabel = "Level " + staminaDelayLevel;
+
+        String staminaProgressLabel;
+        if (staminaDelayLevel >= 3) {
+            staminaProgressLabel = staminaDepletions + " depletions (no extra delay)";
+        } else {
+            staminaProgressLabel = staminaDepletions + "/" + nextStaminaLevelAt
+                    + " depletions (-" + extraDelaySeconds + "s extra delay)";
+        }
 
         ChoiceElement[] elements = new ChoiceElement[] {
-                new MutationEntryElement(name, description, levelLabel, progressLabel)
+                new MutationEntryElement(miningName, miningDescription, miningLevelLabel, miningProgressLabel),
+                new MutationEntryElement(staminaName, staminaDescription, staminaLevelLabel, staminaProgressLabel)
         };
 
         return new MutationsPage(playerRef, elements);

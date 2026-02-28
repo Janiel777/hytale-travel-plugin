@@ -12,6 +12,9 @@ import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.janiel.hytale.travel.mutations.MutationsProgression;
+import com.janiel.hytale.travel.mutations.persistence.MutationsRepository;
+import com.janiel.hytale.travel.mutations.persistence.MutationsState;
 
 import java.util.Map;
 import java.util.UUID;
@@ -35,12 +38,6 @@ public final class StaminaDepletionExtraRegenDelaySystem extends DelayedEntitySy
     private static final float NEGATIVE_EPSILON = -0.0001f;
 
     private static final String STAMINA_REGEN_DELAY_STAT_ID = "StaminaRegenDelay";
-
-    /**
-     * With default assets: StaminaRegenDelay regenerates +0.1 each 0.1s => +1.0 per second.
-     * So setting delay to -3.0 gives ~3 seconds until it reaches 0.
-     */
-    private static final float TARGET_DELAY_VALUE_ON_DEPLETION = -3;
 
     private static final class State {
         boolean wasEmpty;
@@ -121,19 +118,38 @@ public final class StaminaDepletionExtraRegenDelaySystem extends DelayedEntitySy
         // Apply only after the engine has already pushed delay negative (e.g., -0.75).
         float delayValue = regenDelay.get();
         if (delayValue < NEGATIVE_EPSILON) {
+            // Increment depletions exactly once per depletion (right before we mark "applied").
+            MutationsState stateAfter = MutationsRepository.incrementStaminaDepletionsAndGetState(uuid);
+
+            int staminaDelayLevel = stateAfter.getStaminaDelayLevel();
+            int extraDelaySeconds = MutationsProgression.staminaExtraDelaySecondsForLevel(staminaDelayLevel);
+
+            // With default assets: StaminaRegenDelay regenerates +0.1 each 0.1s => +1.0 per second.
+            // So setting delay to -N.0 gives ~N seconds until it reaches 0.
+            float targetDelayValue = -1.0f * (float) extraDelaySeconds;
+
             int delayIndex = regenDelay.getIndex();
 
             // Only push if our target increases the delay window.
-            if (delayValue > TARGET_DELAY_VALUE_ON_DEPLETION) {
-                statMap.setStatValue(delayIndex, TARGET_DELAY_VALUE_ON_DEPLETION);
+            if (delayValue > targetDelayValue) {
+                statMap.setStatValue(delayIndex, targetDelayValue);
                 st.appliedForThisDepletion = true;
 
                 LOGGER.atInfo().log("[STAMINA-DELAY] Applied extra regen delay on depletion uuid=" + uuid
                         + " stamina=" + staminaValue
-                        + " delay " + delayValue + " -> " + TARGET_DELAY_VALUE_ON_DEPLETION);
+                        + " delay " + delayValue + " -> " + targetDelayValue
+                        + " level=" + staminaDelayLevel
+                        + " depletions=" + stateAfter.getStaminaDepletions());
             } else {
-                // Already more negative than our target; still mark as applied so we don't spam.
+                // Already more negative than our target (or level 3 => target 0); still mark as applied so we don't spam.
                 st.appliedForThisDepletion = true;
+
+                LOGGER.atInfo().log("[STAMINA-DELAY] No override needed on depletion uuid=" + uuid
+                        + " stamina=" + staminaValue
+                        + " delay=" + delayValue
+                        + " target=" + targetDelayValue
+                        + " level=" + staminaDelayLevel
+                        + " depletions=" + stateAfter.getStaminaDepletions());
             }
         }
     }

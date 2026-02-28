@@ -24,6 +24,9 @@ public final class MutationsRepository {
     private static final String FIELD_BLOCKS_BROKEN = "blocksBroken";
     private static final String FIELD_MINING_LEVEL = "miningLevel";
 
+    private static final String FIELD_STAMINA_DEPLETIONS = "staminaDepletions";
+    private static final String FIELD_STAMINA_DELAY_LEVEL = "staminaDelayLevel";
+
     private MutationsRepository() {
     }
 
@@ -39,6 +42,14 @@ public final class MutationsRepository {
         return getOrLoadState(playerUuid).getMiningLevel();
     }
 
+    public static int getStaminaDepletions(UUID playerUuid) {
+        return getOrLoadState(playerUuid).getStaminaDepletions();
+    }
+
+    public static int getStaminaDelayLevel(UUID playerUuid) {
+        return getOrLoadState(playerUuid).getStaminaDelayLevel();
+    }
+
     public static int incrementBlocksBroken(UUID playerUuid) {
         return incrementBlocksBrokenAndGetState(playerUuid).getBlocksBroken();
     }
@@ -48,9 +59,35 @@ public final class MutationsRepository {
             MutationsState before = MutationsCache.getOrLoad(playerUuid);
 
             int nextBlocksBroken = before.getBlocksBroken() + 1;
-            int nextLevel = MutationsProgression.computeMiningLevel(nextBlocksBroken);
+            int nextMiningLevel = MutationsProgression.computeMiningLevel(nextBlocksBroken);
 
-            MutationsState after = new MutationsState(nextBlocksBroken, nextLevel);
+            MutationsState after = new MutationsState(
+                    nextBlocksBroken,
+                    nextMiningLevel,
+                    before.getStaminaDepletions(),
+                    before.getStaminaDelayLevel()
+            );
+
+            saveState(playerUuid, after);
+            MutationsCache.put(playerUuid, after);
+
+            return after;
+        }
+    }
+
+    public static MutationsState incrementStaminaDepletionsAndGetState(UUID playerUuid) {
+        synchronized (LOCK) {
+            MutationsState before = MutationsCache.getOrLoad(playerUuid);
+
+            int nextDepletions = before.getStaminaDepletions() + 1;
+            int nextDelayLevel = MutationsProgression.computeStaminaDelayLevel(nextDepletions);
+
+            MutationsState after = new MutationsState(
+                    before.getBlocksBroken(),
+                    before.getMiningLevel(),
+                    nextDepletions,
+                    nextDelayLevel
+            );
 
             saveState(playerUuid, after);
             MutationsCache.put(playerUuid, after);
@@ -65,16 +102,16 @@ public final class MutationsRepository {
             JsonObject obj = loadOrCreate(playerUuid);
 
             int blocksBroken = readInt(obj, FIELD_BLOCKS_BROKEN, 0);
-            int computedLevel = MutationsProgression.computeMiningLevel(blocksBroken);
+            int computedMiningLevel = MutationsProgression.computeMiningLevel(blocksBroken);
 
-            int level = readInt(obj, FIELD_MINING_LEVEL, computedLevel);
-            if (level != computedLevel) {
+            int miningLevel = readInt(obj, FIELD_MINING_LEVEL, computedMiningLevel);
+            if (miningLevel != computedMiningLevel) {
                 // Mantener archivo consistente con la progresión actual
-                level = computedLevel;
-                obj.addProperty(FIELD_MINING_LEVEL, level);
+                miningLevel = computedMiningLevel;
+                obj.addProperty(FIELD_MINING_LEVEL, miningLevel);
                 save(playerUuid, obj);
             } else if (!obj.has(FIELD_MINING_LEVEL)) {
-                obj.addProperty(FIELD_MINING_LEVEL, level);
+                obj.addProperty(FIELD_MINING_LEVEL, miningLevel);
                 save(playerUuid, obj);
             }
 
@@ -83,7 +120,25 @@ public final class MutationsRepository {
                 save(playerUuid, obj);
             }
 
-            return new MutationsState(blocksBroken, level);
+            int staminaDepletions = readInt(obj, FIELD_STAMINA_DEPLETIONS, 0);
+            int computedStaminaDelayLevel = MutationsProgression.computeStaminaDelayLevel(staminaDepletions);
+
+            int staminaDelayLevel = readInt(obj, FIELD_STAMINA_DELAY_LEVEL, computedStaminaDelayLevel);
+            if (staminaDelayLevel != computedStaminaDelayLevel) {
+                staminaDelayLevel = computedStaminaDelayLevel;
+                obj.addProperty(FIELD_STAMINA_DELAY_LEVEL, staminaDelayLevel);
+                save(playerUuid, obj);
+            } else if (!obj.has(FIELD_STAMINA_DELAY_LEVEL)) {
+                obj.addProperty(FIELD_STAMINA_DELAY_LEVEL, staminaDelayLevel);
+                save(playerUuid, obj);
+            }
+
+            if (!obj.has(FIELD_STAMINA_DEPLETIONS)) {
+                obj.addProperty(FIELD_STAMINA_DEPLETIONS, staminaDepletions);
+                save(playerUuid, obj);
+            }
+
+            return new MutationsState(blocksBroken, miningLevel, staminaDepletions, staminaDelayLevel);
         }
     }
 
@@ -102,6 +157,8 @@ public final class MutationsRepository {
         JsonObject obj = new JsonObject();
         obj.addProperty(FIELD_BLOCKS_BROKEN, state.getBlocksBroken());
         obj.addProperty(FIELD_MINING_LEVEL, state.getMiningLevel());
+        obj.addProperty(FIELD_STAMINA_DEPLETIONS, state.getStaminaDepletions());
+        obj.addProperty(FIELD_STAMINA_DELAY_LEVEL, state.getStaminaDelayLevel());
         save(playerUuid, obj);
     }
 
@@ -121,6 +178,8 @@ public final class MutationsRepository {
             JsonObject fresh = new JsonObject();
             fresh.addProperty(FIELD_BLOCKS_BROKEN, 0);
             fresh.addProperty(FIELD_MINING_LEVEL, 0);
+            fresh.addProperty(FIELD_STAMINA_DEPLETIONS, 0);
+            fresh.addProperty(FIELD_STAMINA_DELAY_LEVEL, 0);
             save(playerUuid, fresh);
             return fresh;
         }
@@ -132,6 +191,8 @@ public final class MutationsRepository {
                 JsonObject fresh = new JsonObject();
                 fresh.addProperty(FIELD_BLOCKS_BROKEN, 0);
                 fresh.addProperty(FIELD_MINING_LEVEL, 0);
+                fresh.addProperty(FIELD_STAMINA_DEPLETIONS, 0);
+                fresh.addProperty(FIELD_STAMINA_DELAY_LEVEL, 0);
                 save(playerUuid, fresh);
                 return fresh;
             }
@@ -140,6 +201,8 @@ public final class MutationsRepository {
             JsonObject fresh = new JsonObject();
             fresh.addProperty(FIELD_BLOCKS_BROKEN, 0);
             fresh.addProperty(FIELD_MINING_LEVEL, 0);
+            fresh.addProperty(FIELD_STAMINA_DEPLETIONS, 0);
+            fresh.addProperty(FIELD_STAMINA_DELAY_LEVEL, 0);
             save(playerUuid, fresh);
             return fresh;
         }
