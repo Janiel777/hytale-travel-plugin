@@ -27,6 +27,7 @@ import com.janiel.hytale.travel.ui.PortalChoicePage;
 import com.janiel.hytale.travel.mutations.system.DamageBlockLoggerSystem;
 import com.janiel.hytale.travel.mutations.system.BlockBreakLoggerSystem;
 import com.janiel.hytale.travel.mutations.system.StaminaDepletionExtraRegenDelaySystem;
+import com.janiel.hytale.travel.mutations.system.DeathInfoLoggerSystem;
 
 import javax.annotation.Nonnull;
 
@@ -138,6 +139,10 @@ public class TravelPlugin extends JavaPlugin {
         // Mutations (debug): log when a block is damaged (mining tick while holding click)
         getEntityStoreRegistry().registerSystem(new DamageBlockLoggerSystem());
         LOGGER.atInfo().log("Mutations: DamageBlockLoggerSystem registered (DamageBlockEvent)");
+
+        // Mutations (debug): log death component + death info (Damage) when any entity dies
+        getEntityStoreRegistry().registerSystem(new DeathInfoLoggerSystem());
+        LOGGER.atInfo().log("Combat: DeathInfoLoggerSystem registered (DeathComponent/DeathInfo)");
 
         getEntityStoreRegistry().registerSystem(new StaminaDepletionExtraRegenDelaySystem());
         LOGGER.atInfo().log("Stamina: StaminaDepletionExtraRegenDelaySystem registered (DelayedEntitySystem)");
