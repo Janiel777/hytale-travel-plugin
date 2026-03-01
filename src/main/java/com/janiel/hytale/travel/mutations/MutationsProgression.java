@@ -202,6 +202,48 @@ public final class MutationsProgression {
         return computeWeaponLevel(throwableKills, THROWABLE_LEVEL_1_KILLS, THROWABLE_LEVEL_2_KILLS, THROWABLE_LEVEL_3_KILLS);
     }
 
+    // --- UI helpers: next threshold (kills) by weapon type ---
+
+    public static int swordKillsGoalForLevel(int level) {
+        return weaponGoalForLevel(level, SWORD_LEVEL_1_KILLS, SWORD_LEVEL_2_KILLS, SWORD_LEVEL_3_KILLS);
+    }
+
+    public static int axeKillsGoalForLevel(int level) {
+        return weaponGoalForLevel(level, AXE_LEVEL_1_KILLS, AXE_LEVEL_2_KILLS, AXE_LEVEL_3_KILLS);
+    }
+
+    public static int maceKillsGoalForLevel(int level) {
+        return weaponGoalForLevel(level, MACE_LEVEL_1_KILLS, MACE_LEVEL_2_KILLS, MACE_LEVEL_3_KILLS);
+    }
+
+    public static int spearKillsGoalForLevel(int level) {
+        return weaponGoalForLevel(level, SPEAR_LEVEL_1_KILLS, SPEAR_LEVEL_2_KILLS, SPEAR_LEVEL_3_KILLS);
+    }
+
+    public static int daggerKillsGoalForLevel(int level) {
+        return weaponGoalForLevel(level, DAGGER_LEVEL_1_KILLS, DAGGER_LEVEL_2_KILLS, DAGGER_LEVEL_3_KILLS);
+    }
+
+    public static int bowKillsGoalForLevel(int level) {
+        return weaponGoalForLevel(level, BOW_LEVEL_1_KILLS, BOW_LEVEL_2_KILLS, BOW_LEVEL_3_KILLS);
+    }
+
+    public static int crossbowKillsGoalForLevel(int level) {
+        return weaponGoalForLevel(level, CROSSBOW_LEVEL_1_KILLS, CROSSBOW_LEVEL_2_KILLS, CROSSBOW_LEVEL_3_KILLS);
+    }
+
+    public static int gunKillsGoalForLevel(int level) {
+        return weaponGoalForLevel(level, GUN_LEVEL_1_KILLS, GUN_LEVEL_2_KILLS, GUN_LEVEL_3_KILLS);
+    }
+
+    public static int magicKillsGoalForLevel(int level) {
+        return weaponGoalForLevel(level, MAGIC_LEVEL_1_KILLS, MAGIC_LEVEL_2_KILLS, MAGIC_LEVEL_3_KILLS);
+    }
+
+    public static int throwableKillsGoalForLevel(int level) {
+        return weaponGoalForLevel(level, THROWABLE_LEVEL_1_KILLS, THROWABLE_LEVEL_2_KILLS, THROWABLE_LEVEL_3_KILLS);
+    }
+
     private static int computeWeaponLevel(int kills, int level1Kills, int level2Kills, int level3Kills) {
         if (kills < level1Kills) {
             return 0;
@@ -213,5 +255,15 @@ public final class MutationsProgression {
             return 2;
         }
         return 3;
+    }
+
+    private static int weaponGoalForLevel(int level, int level1Kills, int level2Kills, int level3Kills) {
+        if (level <= 0) {
+            return level1Kills;
+        }
+        if (level == 1) {
+            return level2Kills;
+        }
+        return level3Kills;
     }
 }

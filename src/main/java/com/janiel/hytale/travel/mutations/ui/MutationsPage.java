@@ -19,6 +19,9 @@ public final class MutationsPage extends ChoiceBasePage {
 
         MutationsState state = MutationsRepository.getOrLoadState(playerRef.getUuid());
 
+        // -----------------------------
+        // Mining
+        // -----------------------------
         int blocksMined = state.getBlocksBroken();
         int miningLevel = state.getMiningLevel();
         int nextMiningLevelAt = MutationsProgression.miningGoalForLevel(miningLevel);
@@ -28,6 +31,9 @@ public final class MutationsPage extends ChoiceBasePage {
         String miningLevelLabel = "Level " + miningLevel;
         String miningProgressLabel = blocksMined + "/" + nextMiningLevelAt + " blocks";
 
+        // -----------------------------
+        // Stamina
+        // -----------------------------
         int staminaDepletions = state.getStaminaDepletions();
         int staminaDelayLevel = state.getStaminaDelayLevel();
         int nextStaminaLevelAt = MutationsProgression.staminaDepletionsGoalForLevel(staminaDelayLevel);
@@ -47,9 +53,144 @@ public final class MutationsPage extends ChoiceBasePage {
                     + " depletions (-" + extraDelaySeconds + "s extra delay, x" + regenMultiplier + " regen)";
         }
 
+        // -----------------------------
+        // Weapons
+        // -----------------------------
+
+        // SWORD
+        int swordKills = state.getSwordKills();
+        int swordLevel = state.getSwordLevel();
+        int swordNextAt = MutationsProgression.swordKillsGoalForLevel(swordLevel);
+
+        String swordName = "Sword Mastery";
+        String swordDescription = "Defeat enemies with swords to increase sword proficiency.";
+        String swordLevelLabel = "Level " + swordLevel;
+        String swordProgressLabel = (swordLevel >= 3)
+                ? (swordKills + " kills (MAX)")
+                : (swordKills + "/" + swordNextAt + " kills");
+
+        // AXE
+        int axeKills = state.getAxeKills();
+        int axeLevel = state.getAxeLevel();
+        int axeNextAt = MutationsProgression.axeKillsGoalForLevel(axeLevel);
+
+        String axeName = "Axe Mastery";
+        String axeDescription = "Defeat enemies with axes to increase axe proficiency.";
+        String axeLevelLabel = "Level " + axeLevel;
+        String axeProgressLabel = (axeLevel >= 3)
+                ? (axeKills + " kills (MAX)")
+                : (axeKills + "/" + axeNextAt + " kills");
+
+        // MACE
+        int maceKills = state.getMaceKills();
+        int maceLevel = state.getMaceLevel();
+        int maceNextAt = MutationsProgression.maceKillsGoalForLevel(maceLevel);
+
+        String maceName = "Mace Mastery";
+        String maceDescription = "Defeat enemies with maces to increase blunt weapon proficiency.";
+        String maceLevelLabel = "Level " + maceLevel;
+        String maceProgressLabel = (maceLevel >= 3)
+                ? (maceKills + " kills (MAX)")
+                : (maceKills + "/" + maceNextAt + " kills");
+
+        // SPEAR
+        int spearKills = state.getSpearKills();
+        int spearLevel = state.getSpearLevel();
+        int spearNextAt = MutationsProgression.spearKillsGoalForLevel(spearLevel);
+
+        String spearName = "Spear Mastery";
+        String spearDescription = "Defeat enemies with spears to increase spear proficiency.";
+        String spearLevelLabel = "Level " + spearLevel;
+        String spearProgressLabel = (spearLevel >= 3)
+                ? (spearKills + " kills (MAX)")
+                : (spearKills + "/" + spearNextAt + " kills");
+
+        // DAGGER
+        int daggerKills = state.getDaggerKills();
+        int daggerLevel = state.getDaggerLevel();
+        int daggerNextAt = MutationsProgression.daggerKillsGoalForLevel(daggerLevel);
+
+        String daggerName = "Dagger Mastery";
+        String daggerDescription = "Defeat enemies with daggers to increase dagger proficiency.";
+        String daggerLevelLabel = "Level " + daggerLevel;
+        String daggerProgressLabel = (daggerLevel >= 3)
+                ? (daggerKills + " kills (MAX)")
+                : (daggerKills + "/" + daggerNextAt + " kills");
+
+        // BOW
+        int bowKills = state.getBowKills();
+        int bowLevel = state.getBowLevel();
+        int bowNextAt = MutationsProgression.bowKillsGoalForLevel(bowLevel);
+
+        String bowName = "Bow Mastery";
+        String bowDescription = "Defeat enemies with bows to increase bow proficiency.";
+        String bowLevelLabel = "Level " + bowLevel;
+        String bowProgressLabel = (bowLevel >= 3)
+                ? (bowKills + " kills (MAX)")
+                : (bowKills + "/" + bowNextAt + " kills");
+
+        // CROSSBOW
+        int crossbowKills = state.getCrossbowKills();
+        int crossbowLevel = state.getCrossbowLevel();
+        int crossbowNextAt = MutationsProgression.crossbowKillsGoalForLevel(crossbowLevel);
+
+        String crossbowName = "Crossbow Mastery";
+        String crossbowDescription = "Defeat enemies with crossbows to increase crossbow proficiency.";
+        String crossbowLevelLabel = "Level " + crossbowLevel;
+        String crossbowProgressLabel = (crossbowLevel >= 3)
+                ? (crossbowKills + " kills (MAX)")
+                : (crossbowKills + "/" + crossbowNextAt + " kills");
+
+        // GUN
+        int gunKills = state.getGunKills();
+        int gunLevel = state.getGunLevel();
+        int gunNextAt = MutationsProgression.gunKillsGoalForLevel(gunLevel);
+
+        String gunName = "Gun Mastery";
+        String gunDescription = "Defeat enemies with guns to increase firearm proficiency.";
+        String gunLevelLabel = "Level " + gunLevel;
+        String gunProgressLabel = (gunLevel >= 3)
+                ? (gunKills + " kills (MAX)")
+                : (gunKills + "/" + gunNextAt + " kills");
+
+        // MAGIC
+        int magicKills = state.getMagicKills();
+        int magicLevel = state.getMagicLevel();
+        int magicNextAt = MutationsProgression.magicKillsGoalForLevel(magicLevel);
+
+        String magicName = "Magic Mastery";
+        String magicDescription = "Defeat enemies with magic weapons to increase magical proficiency.";
+        String magicLevelLabel = "Level " + magicLevel;
+        String magicProgressLabel = (magicLevel >= 3)
+                ? (magicKills + " kills (MAX)")
+                : (magicKills + "/" + magicNextAt + " kills");
+
+        // THROWABLE
+        int throwableKills = state.getThrowableKills();
+        int throwableLevel = state.getThrowableLevel();
+        int throwableNextAt = MutationsProgression.throwableKillsGoalForLevel(throwableLevel);
+
+        String throwableName = "Throwable Mastery";
+        String throwableDescription = "Defeat enemies with throwables to increase throwable proficiency.";
+        String throwableLevelLabel = "Level " + throwableLevel;
+        String throwableProgressLabel = (throwableLevel >= 3)
+                ? (throwableKills + " kills (MAX)")
+                : (throwableKills + "/" + throwableNextAt + " kills");
+
         ChoiceElement[] elements = new ChoiceElement[] {
                 new MutationEntryElement(miningName, miningDescription, miningLevelLabel, miningProgressLabel),
-                new MutationEntryElement(staminaName, staminaDescription, staminaLevelLabel, staminaProgressLabel)
+                new MutationEntryElement(staminaName, staminaDescription, staminaLevelLabel, staminaProgressLabel),
+
+                new MutationEntryElement(swordName, swordDescription, swordLevelLabel, swordProgressLabel),
+                new MutationEntryElement(axeName, axeDescription, axeLevelLabel, axeProgressLabel),
+                new MutationEntryElement(maceName, maceDescription, maceLevelLabel, maceProgressLabel),
+                new MutationEntryElement(spearName, spearDescription, spearLevelLabel, spearProgressLabel),
+                new MutationEntryElement(daggerName, daggerDescription, daggerLevelLabel, daggerProgressLabel),
+                new MutationEntryElement(bowName, bowDescription, bowLevelLabel, bowProgressLabel),
+                new MutationEntryElement(crossbowName, crossbowDescription, crossbowLevelLabel, crossbowProgressLabel),
+                new MutationEntryElement(gunName, gunDescription, gunLevelLabel, gunProgressLabel),
+                new MutationEntryElement(magicName, magicDescription, magicLevelLabel, magicProgressLabel),
+                new MutationEntryElement(throwableName, throwableDescription, throwableLevelLabel, throwableProgressLabel)
         };
 
         return new MutationsPage(playerRef, elements);
