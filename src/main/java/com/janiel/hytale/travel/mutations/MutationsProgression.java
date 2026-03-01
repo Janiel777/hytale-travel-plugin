@@ -115,4 +115,103 @@ public final class MutationsProgression {
         }
         return 1.60f;
     }
+
+    // -----------------------------
+    // Weapon Kill progression
+    // -----------------------------
+
+    // NOTE: thresholds are intentionally duplicated per weapon type
+    // so balance can diverge later without changing call sites.
+    private static final int SWORD_LEVEL_1_KILLS = 50;
+    private static final int SWORD_LEVEL_2_KILLS = 150;
+    private static final int SWORD_LEVEL_3_KILLS = 300;
+
+    private static final int AXE_LEVEL_1_KILLS = 50;
+    private static final int AXE_LEVEL_2_KILLS = 150;
+    private static final int AXE_LEVEL_3_KILLS = 300;
+
+    private static final int MACE_LEVEL_1_KILLS = 50;
+    private static final int MACE_LEVEL_2_KILLS = 150;
+    private static final int MACE_LEVEL_3_KILLS = 300;
+
+    private static final int SPEAR_LEVEL_1_KILLS = 50;
+    private static final int SPEAR_LEVEL_2_KILLS = 150;
+    private static final int SPEAR_LEVEL_3_KILLS = 300;
+
+    private static final int DAGGER_LEVEL_1_KILLS = 50;
+    private static final int DAGGER_LEVEL_2_KILLS = 150;
+    private static final int DAGGER_LEVEL_3_KILLS = 300;
+
+    private static final int BOW_LEVEL_1_KILLS = 50;
+    private static final int BOW_LEVEL_2_KILLS = 150;
+    private static final int BOW_LEVEL_3_KILLS = 300;
+
+    private static final int CROSSBOW_LEVEL_1_KILLS = 50;
+    private static final int CROSSBOW_LEVEL_2_KILLS = 150;
+    private static final int CROSSBOW_LEVEL_3_KILLS = 300;
+
+    private static final int GUN_LEVEL_1_KILLS = 50;
+    private static final int GUN_LEVEL_2_KILLS = 150;
+    private static final int GUN_LEVEL_3_KILLS = 300;
+
+    private static final int MAGIC_LEVEL_1_KILLS = 50;
+    private static final int MAGIC_LEVEL_2_KILLS = 150;
+    private static final int MAGIC_LEVEL_3_KILLS = 300;
+
+    private static final int THROWABLE_LEVEL_1_KILLS = 50;
+    private static final int THROWABLE_LEVEL_2_KILLS = 150;
+    private static final int THROWABLE_LEVEL_3_KILLS = 300;
+
+    public static int computeSwordWeaponLevel(int swordKills) {
+        return computeWeaponLevel(swordKills, SWORD_LEVEL_1_KILLS, SWORD_LEVEL_2_KILLS, SWORD_LEVEL_3_KILLS);
+    }
+
+    public static int computeAxeWeaponLevel(int axeKills) {
+        return computeWeaponLevel(axeKills, AXE_LEVEL_1_KILLS, AXE_LEVEL_2_KILLS, AXE_LEVEL_3_KILLS);
+    }
+
+    public static int computeMaceWeaponLevel(int maceKills) {
+        return computeWeaponLevel(maceKills, MACE_LEVEL_1_KILLS, MACE_LEVEL_2_KILLS, MACE_LEVEL_3_KILLS);
+    }
+
+    public static int computeSpearWeaponLevel(int spearKills) {
+        return computeWeaponLevel(spearKills, SPEAR_LEVEL_1_KILLS, SPEAR_LEVEL_2_KILLS, SPEAR_LEVEL_3_KILLS);
+    }
+
+    public static int computeDaggerWeaponLevel(int daggerKills) {
+        return computeWeaponLevel(daggerKills, DAGGER_LEVEL_1_KILLS, DAGGER_LEVEL_2_KILLS, DAGGER_LEVEL_3_KILLS);
+    }
+
+    public static int computeBowWeaponLevel(int bowKills) {
+        return computeWeaponLevel(bowKills, BOW_LEVEL_1_KILLS, BOW_LEVEL_2_KILLS, BOW_LEVEL_3_KILLS);
+    }
+
+    public static int computeCrossbowWeaponLevel(int crossbowKills) {
+        return computeWeaponLevel(crossbowKills, CROSSBOW_LEVEL_1_KILLS, CROSSBOW_LEVEL_2_KILLS, CROSSBOW_LEVEL_3_KILLS);
+    }
+
+    public static int computeGunWeaponLevel(int gunKills) {
+        return computeWeaponLevel(gunKills, GUN_LEVEL_1_KILLS, GUN_LEVEL_2_KILLS, GUN_LEVEL_3_KILLS);
+    }
+
+    public static int computeMagicWeaponLevel(int magicKills) {
+        return computeWeaponLevel(magicKills, MAGIC_LEVEL_1_KILLS, MAGIC_LEVEL_2_KILLS, MAGIC_LEVEL_3_KILLS);
+    }
+
+    public static int computeThrowableWeaponLevel(int throwableKills) {
+        return computeWeaponLevel(throwableKills, THROWABLE_LEVEL_1_KILLS, THROWABLE_LEVEL_2_KILLS, THROWABLE_LEVEL_3_KILLS);
+    }
+
+    private static int computeWeaponLevel(int kills, int level1Kills, int level2Kills, int level3Kills) {
+        if (kills < level1Kills) {
+            return 0;
+        }
+        if (kills < level2Kills) {
+            return 1;
+        }
+        if (kills < level3Kills) {
+            return 2;
+        }
+        return 3;
+    }
 }

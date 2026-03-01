@@ -14,6 +14,9 @@ import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathSystems;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.janiel.hytale.travel.mutations.persistence.MutationsRepository;
+import com.janiel.hytale.travel.mutations.persistence.MutationsState;
+import com.janiel.hytale.travel.mutations.weapon.WeaponType;
 
 import java.lang.reflect.Field;
 import java.util.UUID;
@@ -63,6 +66,7 @@ public final class DeathInfoLoggerSystem extends DeathSystems.OnDeathSystem {
             if (cause != null) {
                 LOGGER.atInfo().log("[DeathInfoLogger] causeDump=" + cause);
             }
+
             if (source != null) {
                 LOGGER.atInfo().log("[DeathInfoLogger] sourceDump=" + source);
             }
@@ -89,6 +93,10 @@ public final class DeathInfoLoggerSystem extends DeathSystems.OnDeathSystem {
                             + " attackerPlayerRef=" + (attackerPlayerRef == null ? "null" : attackerPlayerRef.getClass().getName())
             );
 
+            if (attackerUuid == null) {
+                return;
+            }
+
             // If attacker is a Player entity, read inventory and item in hand
             Player attackerPlayer = store.getComponent(attackerRef, Player.getComponentType());
             if (attackerPlayer == null) {
@@ -104,6 +112,33 @@ public final class DeathInfoLoggerSystem extends DeathSystems.OnDeathSystem {
 
             ItemStack inHand = inv.getItemInHand();
             LOGGER.atInfo().log("[DeathInfoLogger] attackerItemInHand=" + summarizeItemStack(inHand));
+
+            if (inHand == null || inHand.isEmpty()) {
+                return;
+            }
+
+            String itemId = inHand.getItemId();
+            WeaponType weaponType = WeaponType.fromItemId(itemId);
+            if (weaponType == WeaponType.UNKNOWN) {
+                LOGGER.atInfo().log("[WeaponMutations] weaponType=UNKNOWN itemId=" + itemId);
+                return;
+            }
+
+            MutationsState after = MutationsRepository.incrementWeaponKillAndGetState(attackerUuid, weaponType);
+
+            LOGGER.atInfo().log(
+                    "[WeaponMutations] weaponType=" + weaponType
+                            + " itemId=" + itemId
+                            + " swordKills=" + after.getSwordKills()
+                            + " axeKills=" + after.getAxeKills()
+                            + " maceKills=" + after.getMaceKills()
+                            + " spearKills=" + after.getSpearKills()
+                            + " daggerKills=" + after.getDaggerKills()
+                            + " bowKills=" + after.getBowKills()
+                            + " crossbowKills=" + after.getCrossbowKills()
+                            + " magicKills=" + after.getMagicKills()
+                            + " throwableKills=" + after.getThrowableKills()
+            );
 
         } catch (Throwable t) {
             LOGGER.atWarning().log("[DeathInfoLogger] exception: " + t);
