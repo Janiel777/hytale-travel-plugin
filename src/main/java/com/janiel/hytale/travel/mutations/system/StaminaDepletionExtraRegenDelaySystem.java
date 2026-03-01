@@ -15,6 +15,11 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.janiel.hytale.travel.mutations.MutationsProgression;
 import com.janiel.hytale.travel.mutations.persistence.MutationsRepository;
 import com.janiel.hytale.travel.mutations.persistence.MutationsState;
+import com.hypixel.hytale.protocol.SoundCategory;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
+import com.hypixel.hytale.server.core.util.EventTitleUtil;
 
 import java.util.Map;
 import java.util.UUID;
@@ -34,6 +39,9 @@ public final class StaminaDepletionExtraRegenDelaySystem extends DelayedEntitySy
     private static final float POSITIVE_EPSILON = 0.0001f;
 
     private static final String STAMINA_REGEN_DELAY_STAT_ID = "StaminaRegenDelay";
+
+    // Same sound used for mining level-up.
+    private static final String LEVEL_UP_SOUND_ID = "SFX_Discovery_Z1_Medium";
 
     private static final class State {
         boolean wasEmpty;
@@ -123,9 +131,17 @@ public final class StaminaDepletionExtraRegenDelaySystem extends DelayedEntitySy
         if (delayValue < NEGATIVE_EPSILON) {
 
             // Increment depletions exactly once per depletion.
+            MutationsState stateBefore = MutationsRepository.getOrLoadState(uuid);
+            int previousLevel = stateBefore.getStaminaDelayLevel();
+
+            // Increment depletions exactly once per depletion.
             MutationsState stateAfter = MutationsRepository.incrementStaminaDepletionsAndGetState(uuid);
 
             int staminaDelayLevel = stateAfter.getStaminaDelayLevel();
+            if (staminaDelayLevel > previousLevel) {
+                showStaminaLevelUp(playerRef, staminaDelayLevel);
+            }
+
             int extraDelaySeconds = MutationsProgression.staminaExtraDelaySecondsForLevel(staminaDelayLevel);
 
             // Setting delay to -N.0 gives ~N seconds until it reaches 0 (based on default behavior observed).
@@ -215,5 +231,21 @@ public final class StaminaDepletionExtraRegenDelaySystem extends DelayedEntitySy
 
         int staminaIndex = stamina.getIndex();
         statMap.setStatValue(staminaIndex, newValue);
+    }
+
+    private static void showStaminaLevelUp(PlayerRef playerRef, int newLevel) {
+        // Title overlay (primary + secondary)
+        EventTitleUtil.showEventTitleToPlayer(
+                playerRef,
+                Message.raw("Stamina Recovery"),
+                Message.raw("Level " + newLevel),
+                true
+        );
+
+        // Sound (plays only if the ID exists in the SoundEvent asset map)
+        int soundIndex = SoundEvent.getAssetMap().getIndexOrDefault(LEVEL_UP_SOUND_ID, SoundEvent.EMPTY_ID);
+        if (soundIndex != SoundEvent.EMPTY_ID) {
+            SoundUtil.playSoundEvent2dToPlayer(playerRef, soundIndex, SoundCategory.UI);
+        }
     }
 }
