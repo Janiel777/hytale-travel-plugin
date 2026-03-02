@@ -1,0 +1,8 @@
+{
+  "Duration": 5,
+  "OverlapBehavior": "Overwrite",
+  "RemovalBehavior": "Duration",
+  "Infinite": false,
+  "Debuff": true,
+  "StatusEffectIcon": "Icons/ItemsGenerated/Weapon_Bomb_Potion_Poison.png"
+}

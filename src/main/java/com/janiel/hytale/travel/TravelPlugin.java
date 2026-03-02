@@ -28,6 +28,7 @@ import com.janiel.hytale.travel.mutations.system.DamageBlockLoggerSystem;
 import com.janiel.hytale.travel.mutations.system.BlockBreakLoggerSystem;
 import com.janiel.hytale.travel.mutations.system.StaminaDepletionExtraRegenDelaySystem;
 import com.janiel.hytale.travel.mutations.system.DeathInfoLoggerSystem;
+import com.janiel.hytale.travel.mutations.system.SwordMasteryVulnerableDamageTakenSystem;
 
 import javax.annotation.Nonnull;
 
@@ -146,6 +147,9 @@ public class TravelPlugin extends JavaPlugin {
 
         getEntityStoreRegistry().registerSystem(new StaminaDepletionExtraRegenDelaySystem());
         LOGGER.atInfo().log("Stamina: StaminaDepletionExtraRegenDelaySystem registered (DelayedEntitySystem)");
+
+        getEntityStoreRegistry().registerSystem(new SwordMasteryVulnerableDamageTakenSystem());
+        LOGGER.atInfo().log("Combat: SwordMasteryVulnerableDamageTakenSystem registered (Damage)");
 
         LOGGER.atInfo().log("HytaleTravel setup done");
     }
