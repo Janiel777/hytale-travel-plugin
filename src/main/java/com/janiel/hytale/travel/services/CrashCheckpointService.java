@@ -6,6 +6,8 @@ import com.janiel.hytale.travel.net.BackendClient;
 import com.janiel.hytale.travel.persistence.FinalPersistGate;
 import com.janiel.hytale.travel.persistence.InventorySessionStore;
 import com.janiel.hytale.travel.persistence.PlayerStateFiles;
+import com.janiel.hytale.travel.mutations.persistence.MutationsRepository;
+import java.util.UUID;
 
 import java.security.MessageDigest;
 import java.util.List;
@@ -89,18 +91,35 @@ public final class CrashCheckpointService {
         }
 
         String snapshotJson = PlayerStateFiles.readSnapshotJson(cfg.getUniverseDir(), session.playerUuid);
-        String hash = sha256Hex(snapshotJson);
+
+        String mutationsJson = "{}";
+        try {
+            mutationsJson = MutationsRepository.readRawJson(UUID.fromString(session.playerUuid));
+        } catch (Exception ignore) {
+        }
+
+        String combined = (snapshotJson == null ? "" : snapshotJson) + "\n---\n" + (mutationsJson == null ? "" : mutationsJson);
+        String hash = sha256Hex(combined);
 
         String last = LAST_SAVED_HASH.get(session.playerUuid);
         if (hash.equals(last)) {
             return; // no change since last checkpoint
         }
 
-        BackendClient.InventorySaveResult saveRes = backend.inventorySave(
+//        BackendClient.InventorySaveResult saveRes = backend.inventorySave(
+//                session.playerUuid,
+//                session.serverId,
+//                session.expectedVersion,
+//                snapshotJson
+//        );
+
+        BackendClient.ProfileSaveResult saveRes = backend.profileSave(
                 session.playerUuid,
                 session.serverId,
                 session.expectedVersion,
-                snapshotJson
+                snapshotJson,
+                snapshotJson,
+                mutationsJson
         );
 
         session.expectedVersion = saveRes.newVersion;

@@ -43,6 +43,40 @@ public final class BackendClient {
         }
     }
 
+    public static final class ProfileSessionAcquireResult {
+        public final String stateJson;
+        public final String inventoryJson;
+        public final String mutationsJson;
+        public final int version;
+        public final String lockExpiresAtIso;
+
+        public ProfileSessionAcquireResult(String stateJson, String inventoryJson, String mutationsJson, int version, String lockExpiresAtIso) {
+            this.stateJson = stateJson;
+            this.inventoryJson = inventoryJson;
+            this.mutationsJson = mutationsJson;
+            this.version = version;
+            this.lockExpiresAtIso = lockExpiresAtIso;
+        }
+    }
+
+    public static final class ProfileSaveResult {
+        public final int newVersion;
+
+        public ProfileSaveResult(int newVersion) {
+            this.newVersion = newVersion;
+        }
+    }
+
+    public static final class ProfileReleaseResult {
+        public final boolean released;
+        public final String status;
+
+        public ProfileReleaseResult(boolean released, String status) {
+            this.released = released;
+            this.status = status;
+        }
+    }
+
     public BackendClient(String baseUrl, int timeoutMs) {
         this.baseUrl = baseUrl;
         this.timeoutMs = timeoutMs;
@@ -162,6 +196,105 @@ public final class BackendClient {
         return new InventorySessionAcquireResult(invJson, version, lockExp);
     }
 
+    public ProfileSessionAcquireResult profileSessionAcquire(String playerUuid, String serverId)
+            throws IOException, InterruptedException {
+
+        String body = "{"
+                + "\"player_uuid\":\"" + jsonEscape(playerUuid) + "\","
+                + "\"server_id\":\"" + jsonEscape(serverId) + "\""
+                + "}";
+
+        String url = baseUrl + "/profile/session/acquire";
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofMillis(timeoutMs))
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
+
+        if (res.statusCode() != 200) {
+            throw new IOException("profile session acquire failed: status=" + res.statusCode() + " body=" + res.body());
+        }
+
+        String stateJson = extractJsonString(res.body(), "state_json");
+        String invJson = extractJsonString(res.body(), "inventory_json");
+        String mutsJson = extractJsonString(res.body(), "mutations_json");
+        int version = (int) extractJsonLong(res.body(), "version");
+        String lockExp = extractJsonString(res.body(), "lock_expires_at");
+        return new ProfileSessionAcquireResult(stateJson, invJson, mutsJson, version, lockExp);
+    }
+
+    public ProfileSaveResult profileSave(
+            String playerUuid,
+            String serverId,
+            int expectedVersion,
+            String stateJsonOrNull,
+            String inventoryJsonOrNull,
+            String mutationsJsonOrNull
+    ) throws IOException, InterruptedException {
+
+        String body = "{"
+                + "\"player_uuid\":\"" + jsonEscape(playerUuid) + "\","
+                + "\"server_id\":\"" + jsonEscape(serverId) + "\","
+                + "\"expected_version\":" + expectedVersion + ","
+                + "\"state_json\":" + toNullableJsonString(stateJsonOrNull) + ","
+                + "\"inventory_json\":" + toNullableJsonString(inventoryJsonOrNull) + ","
+                + "\"mutations_json\":" + toNullableJsonString(mutationsJsonOrNull)
+                + "}";
+
+        String url = baseUrl + "/profile/save";
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofMillis(timeoutMs))
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
+
+        if (res.statusCode() != 200) {
+            throw new IOException("profile save failed: status=" + res.statusCode() + " body=" + res.body());
+        }
+
+        int newVersion = (int) extractJsonLong(res.body(), "new_version");
+        return new ProfileSaveResult(newVersion);
+    }
+
+    public ProfileReleaseResult profileSessionRelease(String playerUuid, String serverId)
+            throws IOException, InterruptedException {
+
+        String body = "{"
+                + "\"player_uuid\":\"" + jsonEscape(playerUuid) + "\","
+                + "\"server_id\":\"" + jsonEscape(serverId) + "\""
+                + "}";
+
+        String url = baseUrl + "/profile/session/release";
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofMillis(timeoutMs))
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
+
+        if (res.statusCode() != 200) {
+            throw new IOException("profile session release failed: status=" + res.statusCode() + " body=" + res.body());
+        }
+
+        boolean released = extractJsonBoolean(res.body(), "released");
+        String status = extractJsonString(res.body(), "status");
+        return new ProfileReleaseResult(released, status);
+    }
+
     public InventorySaveResult inventorySave(String playerUuid, String serverId, int expectedVersion, String inventoryJson)
             throws IOException, InterruptedException {
 
@@ -228,6 +361,13 @@ public final class BackendClient {
                 .replace("\n", "\\n")
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
+    }
+
+    private static String toNullableJsonString(String s) {
+        if (s == null) {
+            return "null";
+        }
+        return "\"" + jsonEscape(s) + "\"";
     }
 
     private static long extractJsonLong(String json, String key) throws IOException {

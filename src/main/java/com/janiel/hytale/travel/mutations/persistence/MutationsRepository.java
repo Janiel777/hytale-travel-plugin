@@ -414,6 +414,47 @@ public final class MutationsRepository {
         );
     }
 
+    public static void overwriteFromRawJson(UUID playerUuid, String rawJson) {
+        if (playerUuid == null) return;
+
+        synchronized (LOCK) {
+            ensureDir();
+
+            String safe = (rawJson == null || rawJson.isBlank()) ? "{}" : rawJson;
+
+            Path file = getPlayerFile(playerUuid);
+            try {
+                Files.createDirectories(file.getParent());
+
+                // Backup if exists
+                if (Files.exists(file)) {
+                    String ts = String.valueOf(System.currentTimeMillis());
+                    Path backup = file.resolveSibling(file.getFileName().toString() + ".bak_" + ts);
+                    Files.copy(file, backup, StandardCopyOption.REPLACE_EXISTING);
+                }
+
+                Files.writeString(file, safe, StandardCharsets.UTF_8);
+            } catch (IOException ex) {
+                // Best-effort: keep existing file if write fails
+            }
+        }
+    }
+
+    public static String readRawJson(UUID playerUuid) throws IOException {
+        if (playerUuid == null) {
+            return "{}";
+        }
+
+        synchronized (LOCK) {
+            ensureDir();
+            Path file = getPlayerFile(playerUuid);
+            if (!Files.exists(file)) {
+                return "{}";
+            }
+            return Files.readString(file, StandardCharsets.UTF_8);
+        }
+    }
+
     private static int ensureV2Mutation(JsonArray muts, String id, String counterId, int fallback, String note, UUID playerUuid) {
         JsonObject obj = findMutationObj(muts, id);
         if (obj == null) {

@@ -3,6 +3,8 @@ package com.janiel.hytale.travel.persistence;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.janiel.hytale.travel.config.TravelConfig;
 import com.janiel.hytale.travel.net.BackendClient;
+import com.janiel.hytale.travel.mutations.persistence.MutationsRepository;
+import java.util.UUID;
 
 import java.time.Instant;
 import java.util.Map;
@@ -107,14 +109,28 @@ public final class FinalPersistGate {
             return;
         }
 
+        String mutationsJson = "{}";
+        try {
+            mutationsJson = MutationsRepository.readRawJson(UUID.fromString(playerUuid));
+        } catch (Exception ignore) {
+        }
+
         long saveStartMs = System.currentTimeMillis();
 
         try {
-            BackendClient.InventorySaveResult saveRes = b.inventorySave(
+//            BackendClient.InventorySaveResult saveRes = b.inventorySave(
+//                    playerUuid,
+//                    session.serverId,
+//                    session.expectedVersion,
+//                    snapshotJson
+//            );
+            BackendClient.ProfileSaveResult saveRes = b.profileSave(
                     playerUuid,
                     session.serverId,
                     session.expectedVersion,
-                    snapshotJson
+                    snapshotJson,     // state_json
+                    snapshotJson,     // inventory_json (por ahora mismo snapshot)
+                    mutationsJson     // mutations_json
             );
 
             long saveTookMs = System.currentTimeMillis() - saveStartMs;
@@ -130,7 +146,8 @@ public final class FinalPersistGate {
                     + " tookMs=" + saveTookMs);
 
             try {
-                BackendClient.InventoryReleaseResult rel = b.inventorySessionRelease(playerUuid, session.serverId);
+//                BackendClient.InventoryReleaseResult rel = b.inventorySessionRelease(playerUuid, session.serverId);
+                BackendClient.ProfileReleaseResult rel = b.profileSessionRelease(playerUuid, session.serverId);
 
                 LOGGER.atInfo().log("FINAL_PERSIST_RELEASE_DONE playerUuid=" + playerUuid
                         + " serverId=" + session.serverId
