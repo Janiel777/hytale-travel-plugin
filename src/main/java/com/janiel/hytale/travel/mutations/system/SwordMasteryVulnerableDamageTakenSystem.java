@@ -123,7 +123,7 @@ public final class SwordMasteryVulnerableDamageTakenSystem extends EntityEventSy
                                         float durationSeconds = WeaponEffectDefinitions.vulnerableDurationSeconds();
 
                                         // Resolve the effect asset and apply it to victim.
-                                        String effectId = WeaponEffectDefinitions.vulnerableEffectId();
+                                        String effectId = WeaponEffectDefinitions.vulnerableEffectIdForSwordLevel(swordLevel);
                                         int effectIndex = EntityEffect.getAssetMap().getIndexOrDefault(effectId, -1);
                                         if (effectIndex < 0) {
                                             WeaponEffectEngine.logMissingEffectOnce(LOGGER, effectId);
@@ -160,9 +160,6 @@ public final class SwordMasteryVulnerableDamageTakenSystem extends EntityEventSy
                                                             OverlapBehavior.OVERWRITE,
                                                             store
                                                     );
-
-                                                    // Record multiplier + expiry for O(1) lookups during onAnyDamage.
-                                                    WeaponEffectEngine.markVictim(entityId, swordLevel);
                                                 }
                                             }
                                         }
@@ -175,8 +172,8 @@ public final class SwordMasteryVulnerableDamageTakenSystem extends EntityEventSy
             }
         }
 
-        // 2) Global: multiply ANY damage if victim is marked (and the engine tag is active).
-        // This is intentionally AFTER the sword-hit tag application so the FIRST hit can be multiplied too.
+        // 2) Global: multiply ANY damage if victim has a vulnerable tier tag active.
+        // This is intentionally AFTER the sword-hit tag application so the same hit can be multiplied too.
         WeaponEffectEngine.onAnyDamage(entityId, victimRef, store, damage);
 
         // Optional: extra throttled signal for debugging ordering, if you want.
