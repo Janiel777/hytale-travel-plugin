@@ -24,6 +24,7 @@ public final class WeaponEffectEngine {
 
     private static final AtomicBoolean MISSING_SWORD_EFFECT_LOGGED = new AtomicBoolean(false);
     private static final AtomicBoolean MISSING_WEAKEN_EFFECT_LOGGED = new AtomicBoolean(false);
+    private static final AtomicBoolean MISSING_STUN_EFFECT_LOGGED = new AtomicBoolean(false);
 
     // Throttles to prevent log spam.
     private static volatile long lastMultiplyLogMs = 0L;
@@ -44,6 +45,14 @@ public final class WeaponEffectEngine {
         if (logger == null) return;
         if (MISSING_WEAKEN_EFFECT_LOGGED.compareAndSet(false, true)) {
             logger.atWarning().log("[BattleaxeMastery] Missing EntityEffect asset: id=" + effectId
+                    + " (expected in Server/Entity/Effects/Status/" + effectId + ".json)");
+        }
+    }
+
+    public static void logMissingStunEffectOnce(HytaleLogger logger, String effectId) {
+        if (logger == null) return;
+        if (MISSING_STUN_EFFECT_LOGGED.compareAndSet(false, true)) {
+            logger.atWarning().log("[MaceMastery] Missing EntityEffect asset: id=" + effectId
                     + " (expected in Server/Entity/Effects/Status/" + effectId + ".json)");
         }
     }

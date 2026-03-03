@@ -83,4 +83,27 @@ public final class WeaponEffectDefinitions {
         if (level == 2) return 0.80f;
         return 0.75f;
     }
+
+    // --------------------------------------------------------------------------------------------
+    // Mace mastery: Stun (real freeze using Frozen component + optional VFX EntityEffect "Stun")
+    // --------------------------------------------------------------------------------------------
+
+    public static String stunEffectId() {
+        // Asset filename: Server/Entity/Effects/Status/Stun.json
+        return "Stun";
+    }
+
+    public static float stunDurationSecondsForMaceLevel(int level) {
+        if (level <= 0) return 0.0f;
+        if (level == 1) return 2.0f;
+        if (level == 2) return 3.0f;
+        return 4.0f;
+    }
+
+    public static float stunProcChanceForMaceLevel(int level) {
+        if (level <= 0) return 0.0f;
+        if (level == 1) return 0.15f;
+        if (level == 2) return 0.20f;
+        return 0.99f;
+    }
 }
