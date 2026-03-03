@@ -52,4 +52,35 @@ public final class WeaponEffectDefinitions {
         if (level == 2) return 1.20f;
         return 1.30f; // level >= 3
     }
+
+    // --------------------------------------------------------------------------------------------
+    // Battleaxe mastery: Weaken (attacker deals less damage)
+    // --------------------------------------------------------------------------------------------
+
+    public static String weakenEffectBaseId() {
+        return "Janiel_Weaken_Tag";
+    }
+
+    public static String weakenEffectIdForAxeLevel(int level) {
+        if (level <= 0) {
+            return weakenEffectBaseId();
+        }
+        if (level == 1) return weakenEffectBaseId() + "_T1";
+        if (level == 2) return weakenEffectBaseId() + "_T2";
+        return weakenEffectBaseId() + "_T3";
+    }
+
+    public static float weakenDurationSecondsForAxeLevel(int level) {
+        if (level <= 0) return 0.0f;
+        if (level == 1) return 5.0f;
+        if (level == 2) return 10.0f;
+        return 15f;
+    }
+
+    public static float damageDealtMultiplierWhileWeakened(int level) {
+        if (level <= 0) return 1.0f;
+        if (level == 1) return 0.85f;
+        if (level == 2) return 0.80f;
+        return 0.75f;
+    }
 }

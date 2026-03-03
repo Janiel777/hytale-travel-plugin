@@ -4,10 +4,9 @@ import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.SystemGroup;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
-import com.hypixel.hytale.component.SystemGroup;
-import com.hypixel.hytale.server.core.modules.entity.damage.DamageModule;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect;
 import com.hypixel.hytale.server.core.asset.type.entityeffect.config.OverlapBehavior;
@@ -16,36 +15,35 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
+import com.hypixel.hytale.server.core.modules.entity.damage.DamageModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.janiel.hytale.travel.mutations.persistence.MutationsRepository;
 import com.janiel.hytale.travel.mutations.persistence.MutationsState;
-import com.janiel.hytale.travel.mutations.weapon.WeaponType;
 import com.janiel.hytale.travel.mutations.weapon.effects.WeaponEffectDefinitions;
 import com.janiel.hytale.travel.mutations.weapon.effects.WeaponEffectEngine;
 
 import java.util.UUID;
 
 /**
- * Weapon Mastery (weapon_sword):
- * - When a player hits with a sword and has sword level > 0, apply a "vulnerable" tag (EntityEffect) to the victim.
- * - While the victim is tagged, ANY incoming damage is multiplied by the sword level multiplier (1.10/1.20/1.30).
+ * Battleaxe Mastery (weapon_axe but restricted to battleaxe item ids):
+ * - When a player hits with a battleaxe and has axe level > 0, apply a "weaken" tag (EntityEffect) to the victim.
+ * - While the ATTACKER has this weaken tag active, their outgoing damage is reduced (victim receives less damage).
  *
  * Notes:
- * - The effect "lives" in the attacker (their sword level); the weapon is only used to detect a sword hit.
- * - The tag asset is just a marker (no stat changes), duration based.
- * - OverlapBehavior is OVERWRITE, so newest tag refresh wins.
+ * - No combos, no windows. Just an effect tag and one rule in FilterDamageGroup.
+ * - Uses CAN_BE_PREDICTED=false + setAmount() same as Sword mastery for consistent indicators.
  */
-public final class SwordMasteryVulnerableDamageTakenSystem extends EntityEventSystem<EntityStore, Damage> {
+public final class BattleaxeMasteryWeakenDamageTakenSystem extends EntityEventSystem<EntityStore, Damage> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     // Throttles to prevent log spam.
-    private static volatile long lastSwordHitLogMs = 0L;
+    private static volatile long lastApplyLogMs = 0L;
     private static volatile long lastNoAttackerLogMs = 0L;
     private static volatile long lastSkipLogMs = 0L;
 
-    public SwordMasteryVulnerableDamageTakenSystem() {
+    public BattleaxeMasteryWeakenDamageTakenSystem() {
         super(Damage.class);
     }
 
@@ -56,7 +54,8 @@ public final class SwordMasteryVulnerableDamageTakenSystem extends EntityEventSy
 
     @Override
     public SystemGroup<EntityStore> getGroup() {
-        // Run in FilterDamageGroup so the damage amount is adjusted before inspect/UI systems process it.
+        // Must run in FilterDamageGroup so setAmount() is not overwritten later
+        // and the final damage number/health change matches what we compute (same as Sword).
         return DamageModule.get().getFilterDamageGroup();
     }
 
@@ -73,13 +72,9 @@ public final class SwordMasteryVulnerableDamageTakenSystem extends EntityEventSy
             return;
         }
 
-        boolean attemptedApplyFromSwordHit = false;
-
-        // 1) Best-effort: if this Damage has an EntitySource attacker, and attacker is a sword user with level>0,
-        // apply/refresh the vulnerable tag to the victim FIRST (so the same hit can get multiplied).
+        // 1) If this damage comes from an entity attacker holding a BATTLEAXE, apply/refresh weaken on the victim.
         Ref<EntityStore> attackerRef = WeaponEffectEngine.tryGetEntityAttackerRef(damage);
         if (attackerRef == null) {
-            // Useful debug: many damage sources are not entity-attacks (environment, etc.)
             long now = System.currentTimeMillis();
             if (now - lastNoAttackerLogMs >= 5000L) {
                 lastNoAttackerLogMs = now;
@@ -87,7 +82,7 @@ public final class SwordMasteryVulnerableDamageTakenSystem extends EntityEventSy
                 Damage.Source src = damage.getSource();
                 String srcType = (src == null) ? "null" : src.getClass().getName();
 
-                LOGGER.atInfo().log("[SwordMastery] Damage had no EntitySource attacker. victimEntityId=" + entityId
+                LOGGER.atInfo().log("[BattleaxeMastery] Damage had no EntitySource attacker. victimEntityId=" + entityId
                         + " sourceType=" + srcType
                         + " amount=" + damage.getAmount());
             }
@@ -101,9 +96,10 @@ public final class SwordMasteryVulnerableDamageTakenSystem extends EntityEventSy
                     throttleSkip("attacker UUID null", entityId);
                 } else {
                     MutationsState state = MutationsRepository.getOrLoadState(attackerUuid);
-                    int swordLevel = state.getSwordLevel();
-                    if (swordLevel > 0) {
-                        // Confirm the attacker is actually holding a sword.
+
+                    // Battleaxe is grouped under AXE in your mutation model.
+                    int axeLevel = state.getAxeLevel();
+                    if (axeLevel > 0) {
                         Player attackerPlayer = store.getComponent(attackerRef, Player.getComponentType());
                         if (attackerPlayer == null) {
                             throttleSkip("missing Player component on attacker", entityId);
@@ -117,13 +113,11 @@ public final class SwordMasteryVulnerableDamageTakenSystem extends EntityEventSy
                                     throttleSkip("attacker hand empty", entityId);
                                 } else {
                                     String itemId = inHand.getItemId();
-                                    WeaponType weaponType = WeaponType.fromItemId(itemId);
-                                    if (weaponType == WeaponType.SWORD) {
-                                        float multiplier = WeaponEffectDefinitions.damageTakenMultiplierForSwordLevel(swordLevel);
-                                        float durationSeconds = WeaponEffectDefinitions.vulnerableDurationSeconds();
+                                    if (isBattleaxeItemId(itemId)) {
+                                        float durationSeconds = WeaponEffectDefinitions.weakenDurationSecondsForAxeLevel(axeLevel);
+                                        float damageDealtMultiplier = WeaponEffectDefinitions.damageDealtMultiplierWhileWeakened(axeLevel);
 
-                                        // Resolve the effect asset and apply it to victim.
-                                        String effectId = WeaponEffectDefinitions.vulnerableEffectIdForSwordLevel(swordLevel);
+                                        String effectId = WeaponEffectDefinitions.weakenEffectIdForAxeLevel(axeLevel);
                                         int effectIndex = EntityEffect.getAssetMap().getIndexOrDefault(effectId, -1);
                                         if (effectIndex < 0) {
                                             WeaponEffectEngine.logMissingWeakenEffectOnce(LOGGER, effectId);
@@ -136,17 +130,14 @@ public final class SwordMasteryVulnerableDamageTakenSystem extends EntityEventSy
                                                 if (effects == null) {
                                                     throttleSkip("victim has no EffectControllerComponent", entityId);
                                                 } else {
-                                                    attemptedApplyFromSwordHit = true;
-
-                                                    // Throttled info log when we detect a valid sword hit.
                                                     long now = System.currentTimeMillis();
-                                                    if (now - lastSwordHitLogMs >= 400L) {
-                                                        lastSwordHitLogMs = now;
+                                                    if (now - lastApplyLogMs >= 400L) {
+                                                        lastApplyLogMs = now;
 
-                                                        LOGGER.atInfo().log("[SwordMastery] Sword hit detected -> applying vulnerable tag. attackerUuid=" + attackerUuid
+                                                        LOGGER.atInfo().log("[BattleaxeMastery] Battleaxe hit detected -> applying weaken tag. attackerUuid=" + attackerUuid
                                                                 + " victimEntityId=" + entityId
-                                                                + " swordLevel=" + swordLevel
-                                                                + " multiplier=" + multiplier
+                                                                + " axeLevel=" + axeLevel
+                                                                + " damageDealtMultiplierWhileWeakened=" + damageDealtMultiplier
                                                                 + " durationSeconds=" + durationSeconds
                                                                 + " itemId=" + itemId
                                                                 + " damageAmount(beforeHook)=" + damage.getAmount());
@@ -172,19 +163,21 @@ public final class SwordMasteryVulnerableDamageTakenSystem extends EntityEventSy
             }
         }
 
-        // 2) Global: multiply ANY damage if victim has a vulnerable tier tag active.
-        // This is intentionally AFTER the sword-hit tag application so the same hit can be multiplied too.
-        WeaponEffectEngine.onAnyDamage(entityId, victimRef, store, damage);
-
-        // Optional: extra throttled signal for debugging ordering, if you want.
-        // (I left it out to avoid more spam; your existing logs are enough.)
+        // 2) Global rule: if the attacker is currently Weakened, reduce this damage amount.
+        WeaponEffectEngine.reduceDamageIfAttackerWeakened(entityId, store, damage);
     }
 
     private static void throttleSkip(String reason, int victimEntityId) {
         long now = System.currentTimeMillis();
         if (now - lastSkipLogMs >= 5000L) {
             lastSkipLogMs = now;
-            LOGGER.atInfo().log("[SwordMastery] Skipping apply: " + reason + " victimEntityId=" + victimEntityId);
+            LOGGER.atInfo().log("[BattleaxeMastery] Skipping apply: " + reason + " victimEntityId=" + victimEntityId);
         }
+    }
+
+    private static boolean isBattleaxeItemId(String itemId) {
+        if (itemId == null) return false;
+        String n = itemId.trim().toLowerCase();
+        return !n.isEmpty() && n.contains("battleaxe");
     }
 }
