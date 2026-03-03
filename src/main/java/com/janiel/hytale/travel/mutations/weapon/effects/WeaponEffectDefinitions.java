@@ -106,4 +106,64 @@ public final class WeaponEffectDefinitions {
         if (level == 2) return 0.20f;
         return 0.99f;
     }
+
+    // --------------------------------------------------------------------------------------------
+// Dagger mastery: Bleed tiers (1..10), decays if not refreshed
+// --------------------------------------------------------------------------------------------
+
+    public static int bleedMaxTier() {
+        return 10;
+    }
+
+    public static float bleedProcChanceForDaggerLevel(int level) {
+        return (level > 0) ? 1.0f : 0.0f;
+    }
+
+    public static long bleedDurationMsForDaggerLevel(int level) {
+        // Hard cap: even if something goes wrong, bleed cannot live forever.
+        // Also prevents map entries from surviving too long on edge cases.
+        if (level <= 0) return 0L;
+        if (level == 1) return 12000L;
+        if (level == 2) return 15000L;
+        return 18000L;
+    }
+
+    public static long bleedTickIntervalMs() {
+        // 4 ticks per second
+        return 250L;
+    }
+
+    public static long bleedDecayGraceMs() {
+        // No grace: decay schedule is driven by a fixed 2s step from last refresh.
+        return 0L;
+    }
+
+    public static long bleedDecayStepMs() {
+        // Every 2 seconds without refresh, lose 1 tier.
+        return 2000L;
+    }
+
+    public static float bleedDamagePerTick(int daggerLevel, int tier) {
+        if (daggerLevel <= 0) return 0.0f;
+        if (tier <= 0) return 0.0f;
+
+        // Design:
+        // - Tier drives bleed intensity (stack).
+        // - Dagger mastery level scales the intensity.
+        // - Target baseline: moderate DPS, requires sustained hits for high tiers.
+
+        // Base DPS per tier at level 1.
+        float baseDpsPerTier = 0.50f; // Tier 4 ~= 2 DPS at level 1
+
+        float levelMultiplier;
+        if (daggerLevel == 1) levelMultiplier = 1.00f;
+        else if (daggerLevel == 2) levelMultiplier = 1.25f;
+        else levelMultiplier = 1.50f;
+
+        float dps = (baseDpsPerTier * (float) tier) * levelMultiplier;
+
+        // Convert DPS into damage-per-tick.
+        float ticksPerSecond = 1000.0f / (float) bleedTickIntervalMs(); // 4.0f
+        return dps / ticksPerSecond;
+    }
 }

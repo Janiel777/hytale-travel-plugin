@@ -32,6 +32,8 @@ import com.janiel.hytale.travel.mutations.system.SwordMasteryVulnerableDamageTak
 import com.janiel.hytale.travel.mutations.system.BattleaxeMasteryWeakenDamageTakenSystem;
 import com.janiel.hytale.travel.mutations.system.MaceMasteryStunSystem;
 import com.janiel.hytale.travel.mutations.system.MaceMasteryStunRevertSystem;
+import com.janiel.hytale.travel.mutations.system.DaggerMasteryBleedSystem;
+import com.janiel.hytale.travel.mutations.system.DaggerMasteryBleedTickSystem;
 
 import javax.annotation.Nonnull;
 
@@ -163,6 +165,12 @@ public class TravelPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new MaceMasteryStunRevertSystem());
         LOGGER.atInfo().log("Combat: MaceMasteryStunRevertSystem registered (DelayedEntitySystem)");
         LOGGER.atInfo().log("Combat: BattleaxeMasteryWeakenDamageTakenSystem registered (Damage)");
+
+        getEntityStoreRegistry().registerSystem(new DaggerMasteryBleedSystem());
+        LOGGER.atInfo().log("Combat: DaggerMasteryBleedSystem registered (Damage)");
+
+        getEntityStoreRegistry().registerSystem(new DaggerMasteryBleedTickSystem());
+        LOGGER.atInfo().log("Combat: DaggerMasteryBleedTickSystem registered (DelayedEntitySystem)");
 
         LOGGER.atInfo().log("HytaleTravel setup done");
     }
