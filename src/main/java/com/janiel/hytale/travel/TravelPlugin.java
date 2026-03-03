@@ -34,6 +34,7 @@ import com.janiel.hytale.travel.mutations.system.MaceMasteryStunSystem;
 import com.janiel.hytale.travel.mutations.system.MaceMasteryStunRevertSystem;
 import com.janiel.hytale.travel.mutations.system.DaggerMasteryBleedSystem;
 import com.janiel.hytale.travel.mutations.system.DaggerMasteryBleedTickSystem;
+import com.janiel.hytale.travel.mutations.system.SpearMasteryKnockbackSystem;
 
 import javax.annotation.Nonnull;
 
@@ -171,6 +172,9 @@ public class TravelPlugin extends JavaPlugin {
 
         getEntityStoreRegistry().registerSystem(new DaggerMasteryBleedTickSystem());
         LOGGER.atInfo().log("Combat: DaggerMasteryBleedTickSystem registered (DelayedEntitySystem)");
+
+        getEntityStoreRegistry().registerSystem(new SpearMasteryKnockbackSystem());
+        LOGGER.atInfo().log("Combat: SpearMasteryKnockbackSystem registered (Damage)");
 
         LOGGER.atInfo().log("HytaleTravel setup done");
     }

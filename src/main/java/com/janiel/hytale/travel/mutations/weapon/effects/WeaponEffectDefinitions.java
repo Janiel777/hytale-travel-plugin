@@ -166,4 +166,28 @@ public final class WeaponEffectDefinitions {
         float ticksPerSecond = 1000.0f / (float) bleedTickIntervalMs(); // 4.0f
         return dps / ticksPerSecond;
     }
+
+
+    // --------------------------------------------------------------------------------------------
+    // Spear mastery: Knockback (keep distance)
+    // --------------------------------------------------------------------------------------------
+
+    public static float knockbackProcChanceForSpearLevel(int level) {
+        if (level <= 0) return 0.0f;
+        if (level == 1) return 0.50f;
+        if (level == 2) return 0.75f;
+        return 1.0f;
+    }
+
+    public static float knockbackForceForSpearLevel(int level) {
+        return (level <= 0) ? 0.0f : 0.08f;
+    }
+
+    public static float knockbackDurationSecondsForSpearLevel(int level) {
+        return (level <= 0) ? 0.0f : 0.1f;
+    }
+
+    public static float knockbackForceMultiplierWhenProjectile(int level){
+        return (level <= 0) ? 0.0f : 1.2f;
+    }
 }
