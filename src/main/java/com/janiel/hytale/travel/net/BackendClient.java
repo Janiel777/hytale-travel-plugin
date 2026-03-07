@@ -77,6 +77,32 @@ public final class BackendClient {
         }
     }
 
+    public static final class RoutingUpdateLastResult {
+        public final String playerUuid;
+        public final String serverId;
+        public final boolean updated;
+
+        public RoutingUpdateLastResult(String playerUuid, String serverId, boolean updated) {
+            this.playerUuid = playerUuid;
+            this.serverId = serverId;
+            this.updated = updated;
+        }
+    }
+
+    public static final class ServerHeartbeatResult {
+        public final String serverId;
+        public final String status;
+        public final int playerCount;
+        public final String lastHeartbeatAtIso;
+
+        public ServerHeartbeatResult(String serverId, String status, int playerCount, String lastHeartbeatAtIso) {
+            this.serverId = serverId;
+            this.status = status;
+            this.playerCount = playerCount;
+            this.lastHeartbeatAtIso = lastHeartbeatAtIso;
+        }
+    }
+
     public BackendClient(String baseUrl, int timeoutMs) {
         this.baseUrl = baseUrl;
         this.timeoutMs = timeoutMs;
@@ -352,6 +378,76 @@ public final class BackendClient {
         boolean released = extractJsonBoolean(res.body(), "released");
         String status = extractJsonString(res.body(), "status");
         return new InventoryReleaseResult(released, status);
+    }
+
+    public RoutingUpdateLastResult routingUpdateLast(String playerUuid, String serverId)
+            throws IOException, InterruptedException {
+
+        String body = "{"
+                + "\"player_uuid\":\"" + jsonEscape(playerUuid) + "\","
+                + "\"server_id\":\"" + jsonEscape(serverId) + "\""
+                + "}";
+
+        String url = baseUrl + "/routing/update-last";
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofMillis(timeoutMs))
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
+
+        if (res.statusCode() != 200) {
+            throw new IOException("routing update-last failed: status=" + res.statusCode() + " body=" + res.body());
+        }
+
+        return new RoutingUpdateLastResult(
+                extractJsonString(res.body(), "player_uuid"),
+                extractJsonString(res.body(), "server_id"),
+                extractJsonBoolean(res.body(), "updated")
+        );
+    }
+
+    public ServerHeartbeatResult serverHeartbeat(String serverId,
+                                                 String status,
+                                                 int playerCount,
+                                                 String hostOrNull,
+                                                 Integer portOrNull)
+            throws IOException, InterruptedException {
+
+        String body = "{"
+                + "\"server_id\":\"" + jsonEscape(serverId) + "\","
+                + "\"status\":\"" + jsonEscape(status) + "\","
+                + "\"player_count\":" + playerCount + ","
+                + "\"host\":" + toNullableJsonString(hostOrNull) + ","
+                + "\"port\":" + (portOrNull == null ? "null" : portOrNull)
+                + "}";
+
+        String url = baseUrl + "/servers/heartbeat";
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofMillis(timeoutMs))
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
+
+        if (res.statusCode() != 200) {
+            throw new IOException("server heartbeat failed: status=" + res.statusCode() + " body=" + res.body());
+        }
+
+        return new ServerHeartbeatResult(
+                extractJsonString(res.body(), "server_id"),
+                extractJsonString(res.body(), "status"),
+                (int) extractJsonLong(res.body(), "player_count"),
+                extractJsonString(res.body(), "last_heartbeat_at")
+        );
     }
 
     private static String jsonEscape(String s) {

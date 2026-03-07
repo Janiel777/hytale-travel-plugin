@@ -16,6 +16,7 @@ import com.janiel.hytale.travel.assets.PluginAssetPackRegistrar;
 import com.janiel.hytale.travel.bridges.DisconnectLogBridge;
 import com.janiel.hytale.travel.bridges.InstanceReturnBridge;
 import com.janiel.hytale.travel.bridges.InventoryAcquireBridge;
+import com.janiel.hytale.travel.bridges.RoutingUpdateLastBridge;
 import com.janiel.hytale.travel.bridges.TransferInboundBridge;
 import com.janiel.hytale.travel.commands.*;
 import com.janiel.hytale.travel.config.TravelConfig;
@@ -23,6 +24,7 @@ import com.janiel.hytale.travel.net.BackendClient;
 import com.janiel.hytale.travel.persistence.FinalPersistGate;
 import com.janiel.hytale.travel.services.CrashCheckpointService;
 import com.janiel.hytale.travel.services.LeaseHeartbeatService;
+import com.janiel.hytale.travel.services.ServerHeartbeatService;
 import com.janiel.hytale.travel.ui.PortalChoicePage;
 import com.janiel.hytale.travel.mutations.system.DamageBlockLoggerSystem;
 import com.janiel.hytale.travel.mutations.system.BlockBreakLoggerSystem;
@@ -72,6 +74,8 @@ public class TravelPlugin extends JavaPlugin {
 
         CrashCheckpointService.start(cfg, backend);
 
+        ServerHeartbeatService.start(cfg, backend);
+
         // Initialize final-persist gate so it can save/release after engine writes.
         FinalPersistGate.initialize(cfg, backend);
 
@@ -83,18 +87,14 @@ public class TravelPlugin extends JavaPlugin {
         InventoryAcquireBridge invAcquire = new InventoryAcquireBridge(cfg, backend);
         invAcquire.register(getEventRegistry());
 
+        RoutingUpdateLastBridge routingUpdateLastBridge = new RoutingUpdateLastBridge(cfg, backend);
+        routingUpdateLastBridge.register(getEventRegistry());
+
         // Instrumentation: log disconnect timing vs last observed engine JSON write.
         DisconnectLogBridge disconnectLog = new DisconnectLogBridge();
         disconnectLog.register(getEventRegistry());
         InstanceReturnBridge.register(getEventRegistry());
 
-        // IMPORTANT:
-        // DrainPlayerFromWorldEvent / AddPlayerToWorldEvent are fired on each World's EventRegistry,
-        // not necessarily on the plugin's EventRegistry.
-        // Hook all currently loaded worlds once the Universe is ready.
-        // IMPORTANT:
-// DrainPlayerFromWorldEvent / AddPlayerToWorldEvent are fired on each World's EventRegistry.
-// Hook all currently loaded worlds once Universe is ready (if this patchline exposes a non-null future).
         try {
             java.util.concurrent.CompletableFuture<Void> ready = Universe.get().getUniverseReady();
             if (ready != null) {
@@ -106,7 +106,6 @@ public class TravelPlugin extends JavaPlugin {
             LOGGER.atWarning().log("Failed to attach UniverseReady hook: " + e);
         }
 
-
         getCommandRegistry().registerCommand(new TravelCommand(cfg, backend));
         getCommandRegistry().registerCommand(new ClaimLatestCommand(cfg, backend));
 
@@ -115,8 +114,6 @@ public class TravelPlugin extends JavaPlugin {
         // Temporary dev command: open Mutations custom page.
         getCommandRegistry().registerCommand(new MutationsUiCommand());
 
-        // Register the CustomUI page supplier used by the portal block's OpenCustomUI interaction.
-        // This lets the engine open our server-side custom page via asset JSON, without polling.
         OpenCustomUIInteraction.registerSimple(
                 this,
                 TravelPlugin.class,
@@ -135,19 +132,15 @@ public class TravelPlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new DebugBlockCommand());
         getCommandRegistry().registerCommand(new PlaceBlockCommand());
 
-        // Debug: probe how often the engine overwrites the persisted player JSON.
         getCommandRegistry().registerCommand(new ProbeEngineWriteCommand(cfg));
         getCommandRegistry().registerCommand(new StopProbeEngineWriteCommand());
 
-        // Mutations (debug): log when a block is broken
         getEntityStoreRegistry().registerSystem(new BlockBreakLoggerSystem());
         LOGGER.atInfo().log("Mutations: BlockBreakLoggerSystem registered (BreakBlockEvent)");
 
-        // Mutations (debug): log when a block is damaged (mining tick while holding click)
         getEntityStoreRegistry().registerSystem(new DamageBlockLoggerSystem());
         LOGGER.atInfo().log("Mutations: DamageBlockLoggerSystem registered (DamageBlockEvent)");
 
-        // Mutations (debug): log death component + death info (Damage) when any entity dies
         getEntityStoreRegistry().registerSystem(new DeathInfoLoggerSystem());
         LOGGER.atInfo().log("Combat: DeathInfoLoggerSystem registered (DeathComponent/DeathInfo)");
 
