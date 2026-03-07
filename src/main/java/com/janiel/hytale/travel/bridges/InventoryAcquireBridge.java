@@ -9,6 +9,9 @@ import com.janiel.hytale.travel.persistence.InventorySessionStore;
 import com.janiel.hytale.travel.persistence.PlayerStateFiles;
 import com.janiel.hytale.travel.util.ConnectionKeyUtil;
 import com.janiel.hytale.travel.util.PlayerIdUtil;
+import com.janiel.hytale.travel.mutations.persistence.MutationsCache;
+import com.janiel.hytale.travel.mutations.persistence.MutationsRepository;
+import java.util.UUID;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
@@ -120,7 +123,8 @@ public final class InventoryAcquireBridge {
                 attempts++;
 
                 try {
-                    BackendClient.InventorySessionAcquireResult res = backend.inventorySessionAcquire(playerUuid, serverId);
+//                  BackendClient.InventorySessionAcquireResult res = backend.inventorySessionAcquire(playerUuid, serverId);
+                    BackendClient.ProfileSessionAcquireResult res = backend.profileSessionAcquire(playerUuid, serverId);
 
                     long lockExpMs = parseIsoToEpochMs(res.lockExpiresAtIso);
                     InventorySessionStore.put(new InventorySessionStore.Session(
@@ -134,6 +138,15 @@ public final class InventoryAcquireBridge {
 
                     Path universeDir = cfg.getUniverseDir();
                     Path written = PlayerStateFiles.writeInventoryOnlySnapshot(universeDir, playerUuid, res.inventoryJson);
+
+                    // Apply mutations JSON from backend into local disk + invalidate cache
+                    try {
+                        UUID u = UUID.fromString(playerUuid);
+                        MutationsRepository.overwriteFromRawJson(u, res.mutationsJson);
+                        MutationsCache.invalidate(u);
+                    } catch (Exception ignore) {
+                        // best-effort
+                    }
 
                     long tookMs = System.currentTimeMillis() - startMs;
                     LOGGER.atInfo().log("INVENTORY_ACQUIRE_OK playerUuid=" + playerUuid

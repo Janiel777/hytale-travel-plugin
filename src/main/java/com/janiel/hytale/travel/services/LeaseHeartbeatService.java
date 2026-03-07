@@ -76,7 +76,8 @@ public final class LeaseHeartbeatService {
             }
 
             try {
-                BackendClient.InventorySessionAcquireResult res = backend.inventorySessionAcquire(s.playerUuid, s.serverId);
+//              BackendClient.InventorySessionAcquireResult res = backend.inventorySessionAcquire(s.playerUuid, s.serverId);
+                BackendClient.ProfileSessionAcquireResult res = backend.profileSessionAcquire(s.playerUuid, s.serverId);
 
                 long newLockExpMs = parseIsoToEpochMs(res.lockExpiresAtIso);
 
