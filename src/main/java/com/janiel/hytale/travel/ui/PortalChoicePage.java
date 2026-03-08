@@ -159,15 +159,17 @@ public final class PortalChoicePage extends ChoiceBasePage {
         if (d.type == DestinationType.SERVER) {
             close();
 
-            String serverId = d.id;
-            Integer port = cfg.getListenerPort(serverId);
-            if (port == null) {
+            TravelConfig.ListenerTarget target = cfg.getListenerTarget(d.id);
+            if (target == null) {
                 Player p = store.getComponent(ref, Player.getComponentType());
                 if (p != null) {
-                    p.sendMessage(Message.raw("portalui: invalid port for serverId: " + serverId));
+                    p.sendMessage(Message.raw("portalui: invalid listener target for serverId: " + d.id));
                 }
                 return;
             }
+
+            String host = target.getHost();
+            int port = target.getPort();
 
             // Optional signed payload for proxy referral.
             // If anything goes wrong we fall back to unsigned referral.
@@ -179,7 +181,7 @@ public final class PortalChoicePage extends ChoiceBasePage {
                 if (secret != null && !secret.isBlank()) {
                     try {
                         String nonce = UUID.randomUUID().toString();
-                        payloadBytes = TravelPayload.createSignedBytes(playerUuid, serverId, "", secret, nonce);
+                        payloadBytes = TravelPayload.createSignedBytes(playerUuid, d.id, "", secret, nonce);
 
                         // Safety cap: do not exceed typical packet-friendly payload sizes.
                         if (payloadBytes.length > 4096) {
@@ -195,9 +197,9 @@ public final class PortalChoicePage extends ChoiceBasePage {
             }
 
             if (payloadBytes != null) {
-                playerRef.referToServer(cfg.getProxyHost(), port, payloadBytes);
+                playerRef.referToServer(host, port, payloadBytes);
             } else {
-                playerRef.referToServer(cfg.getProxyHost(), port);
+                playerRef.referToServer(host, port);
             }
 
             return;
@@ -261,7 +263,7 @@ public final class PortalChoicePage extends ChoiceBasePage {
             Integer port = cfg.getListenerPort(serverId);
             String desc = (port == null)
                     ? "listener: (missing port)"
-                    : ("listener: " + cfg.getProxyHost() + ":" + port);
+                    : ("listener: " + cfg.getListenerHost(serverId) + ":" + port + ":" + port);
             out.add(Destination.server(serverId, serverId, desc));
             return out;
         }
@@ -270,7 +272,7 @@ public final class PortalChoicePage extends ChoiceBasePage {
             Integer port = cfg.getListenerPort(serverId);
             String desc = (port == null)
                     ? "listener: (missing port)"
-                    : ("listener: " + cfg.getProxyHost() + ":" + port);
+                    : ("listener: " + cfg.getListenerHost(serverId) + ":" + port + ":" + port);
             out.add(Destination.server(serverId, serverId, desc));
         }
 

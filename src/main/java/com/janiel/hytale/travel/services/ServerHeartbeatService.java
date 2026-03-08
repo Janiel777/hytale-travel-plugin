@@ -39,8 +39,14 @@ public final class ServerHeartbeatService {
             return;
         }
 
-        heartbeatHost = cfg.getProxyHost();
-        heartbeatPort = cfg.getListenerPort(serverId);
+        TravelConfig.ListenerTarget target = cfg.getListenerTarget(serverId);
+        if (target == null) {
+            LOGGER.atWarning().log("ServerHeartbeatService disabled: no listener target configured for serverId=" + serverId);
+            return;
+        }
+
+        heartbeatHost = target.getHost();
+        heartbeatPort = target.getPort();
 
         scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "server-heartbeat-service");

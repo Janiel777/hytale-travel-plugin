@@ -64,8 +64,7 @@ public class TravelPlugin extends JavaPlugin {
         TravelConfig cfg = TravelConfig.load();
         String resolvedServerId = cfg.resolveCurrentServerId();
 
-        LOGGER.atInfo().log("TravelConfig loaded. proxyHost=" + cfg.getProxyHost()
-                + " serverIds=" + cfg.getListenerPorts().keySet()
+        LOGGER.atInfo().log("TravelConfig loaded. serverIds=" + cfg.getListenerTargets().keySet()
                 + " resolvedServerId=" + resolvedServerId
                 + " backendBaseUrl=" + cfg.getBackendBaseUrl()
                 + " backendTimeoutMs=" + cfg.getBackendTimeoutMs());
@@ -126,7 +125,7 @@ public class TravelPlugin extends JavaPlugin {
                 TravelPlugin.class,
                 PORTAL_UI_PAGE_ID,
                 (Function<PlayerRef, com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage>) (playerRef) -> {
-                    List<String> serverIds = new ArrayList<>(cfg.getListenerPorts().keySet());
+                    List<String> serverIds = new ArrayList<>(cfg.getListenerTargets().keySet());
                     Collections.sort(serverIds);
                     return PortalChoicePage.create(playerRef, cfg, serverIds, 0);
                 }

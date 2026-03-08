@@ -56,17 +56,18 @@ public class TravelCommand extends AbstractPlayerCommand {
 
         if (!cfg.hasServerId(serverId)) {
             context.sendMessage(Message.raw("Unknown serverId: " + serverId));
-            context.sendMessage(Message.raw("Available: " + formatAvailable(cfg.getListenerPorts())));
+            context.sendMessage(Message.raw("Available: " + formatAvailable(cfg.getListenerTargets().keySet())));
             return;
         }
 
-        Integer port = cfg.getListenerPort(serverId);
-        if (port == null) {
-            context.sendMessage(Message.raw("Invalid listener port for serverId: " + serverId));
+        TravelConfig.ListenerTarget target = cfg.getListenerTarget(serverId);
+        if (target == null) {
+            context.sendMessage(Message.raw("Invalid listener target for serverId: " + serverId));
             return;
         }
 
-        String host = cfg.getProxyHost();
+        String host = target.getHost();
+        int port = target.getPort();
 
         // Referral payload is signed so the client cannot tamper with the intended target server.
         // Inventory persistence is handled via backend inventory sessions:
@@ -109,11 +110,10 @@ public class TravelCommand extends AbstractPlayerCommand {
         }
     }
 
-    private static String formatAvailable(Map<String, Integer> ports) {
-        StringJoiner sj = new StringJoiner(", ");
-        for (String id : ports.keySet()) {
-            sj.add(id);
+    private String formatAvailable(java.util.Set<String> serverIds) {
+        if (serverIds == null || serverIds.isEmpty()) {
+            return "(none)";
         }
-        return sj.toString();
+        return String.join(", ", serverIds);
     }
 }
