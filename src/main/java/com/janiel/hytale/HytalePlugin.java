@@ -41,6 +41,14 @@ import com.janiel.hytale.mutations.system.MaceMasteryStunRevertSystem;
 import com.janiel.hytale.mutations.system.DaggerMasteryBleedSystem;
 import com.janiel.hytale.mutations.system.DaggerMasteryBleedTickSystem;
 import com.janiel.hytale.mutations.system.SpearMasteryKnockbackSystem;
+import com.janiel.hytale.mutations.system.BowProjectileSpawnLoggerSystem;
+import com.janiel.hytale.mutations.system.BowPerfectShotDamageSystem;
+import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
+import com.janiel.hytale.mutations.component.PerfectShotMarkerComponent;
+import com.janiel.hytale.mutations.interaction.PerfectShotChargingInteraction;
+import com.janiel.hytale.mutations.interaction.PerfectShotProjectileInteraction;
+import com.janiel.hytale.mutations.component.BowPerfectShotChargeTrackerComponent;
+import com.janiel.hytale.mutations.component.PendingPerfectShotComponent;
 
 import javax.annotation.Nonnull;
 
@@ -133,6 +141,44 @@ public class HytalePlugin extends JavaPlugin {
                 }
         );
 
+        BowPerfectShotChargeTrackerComponent.setComponentType(
+                getEntityStoreRegistry().registerComponent(
+                        BowPerfectShotChargeTrackerComponent.class,
+                        BowPerfectShotChargeTrackerComponent::new
+                )
+        );
+        LOGGER.atInfo().log("Combat: BowPerfectShotChargeTrackerComponent registered");
+
+        PendingPerfectShotComponent.setComponentType(
+                getEntityStoreRegistry().registerComponent(
+                        PendingPerfectShotComponent.class,
+                        PendingPerfectShotComponent::new
+                )
+        );
+        LOGGER.atInfo().log("Combat: PendingPerfectShotComponent registered");
+
+        PerfectShotMarkerComponent.setComponentType(
+                getEntityStoreRegistry().registerComponent(
+                        PerfectShotMarkerComponent.class,
+                        PerfectShotMarkerComponent::new
+                )
+        );
+        LOGGER.atInfo().log("Combat: PerfectShotMarkerComponent registered");
+
+        getCodecRegistry(Interaction.CODEC).register(
+                "Janiel_PerfectShot_Charging",
+                PerfectShotChargingInteraction.class,
+                PerfectShotChargingInteraction.CODEC
+        );
+        LOGGER.atInfo().log("Combat: Janiel_PerfectShot_Charging interaction codec registered");
+
+        getCodecRegistry(Interaction.CODEC).register(
+                "Janiel_PerfectShot_Projectile",
+                PerfectShotProjectileInteraction.class,
+                PerfectShotProjectileInteraction.CODEC
+        );
+        LOGGER.atInfo().log("Combat: Janiel_PerfectShot_Projectile interaction codec registered");
+
         PluginAssetPackRegistrar.registerSelfAsAssetPack(this);
 
         getCommandRegistry().registerCommand(new FindAssetCommand());
@@ -175,6 +221,12 @@ public class HytalePlugin extends JavaPlugin {
 
         getEntityStoreRegistry().registerSystem(new SpearMasteryKnockbackSystem());
         LOGGER.atInfo().log("Combat: SpearMasteryKnockbackSystem registered (Damage)");
+
+        getEntityStoreRegistry().registerSystem(new BowProjectileSpawnLoggerSystem());
+        LOGGER.atInfo().log("Combat: BowProjectileSpawnLoggerSystem registered (Projectile spawn investigation)");
+
+        getEntityStoreRegistry().registerSystem(new BowPerfectShotDamageSystem());
+        LOGGER.atInfo().log("Combat: BowPerfectShotDamageSystem registered (Projectile damage -> perfect shot multiplier)");
 
         LOGGER.atInfo().log("HytaleTravel setup done");
     }
