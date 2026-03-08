@@ -14,6 +14,7 @@ import java.util.function.Function;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.janiel.hytale.travel.assets.PluginAssetPackRegistrar;
 import com.janiel.hytale.travel.bridges.DisconnectLogBridge;
+import com.janiel.hytale.travel.bridges.GlobalChatBridge;
 import com.janiel.hytale.travel.bridges.InstanceReturnBridge;
 import com.janiel.hytale.travel.bridges.InventoryAcquireBridge;
 import com.janiel.hytale.travel.bridges.RoutingUpdateLastBridge;
@@ -23,6 +24,7 @@ import com.janiel.hytale.travel.config.TravelConfig;
 import com.janiel.hytale.travel.net.BackendClient;
 import com.janiel.hytale.travel.persistence.FinalPersistGate;
 import com.janiel.hytale.travel.services.CrashCheckpointService;
+import com.janiel.hytale.travel.services.GlobalChatWebSocketService;
 import com.janiel.hytale.travel.services.LeaseHeartbeatService;
 import com.janiel.hytale.travel.services.ServerHeartbeatService;
 import com.janiel.hytale.travel.ui.PortalChoicePage;
@@ -62,8 +64,7 @@ public class TravelPlugin extends JavaPlugin {
         TravelConfig cfg = TravelConfig.load();
         String resolvedServerId = cfg.resolveCurrentServerId();
 
-        LOGGER.atInfo().log("TravelConfig loaded. proxyHost=" + cfg.getProxyHost()
-                + " serverIds=" + cfg.getListenerPorts().keySet()
+        LOGGER.atInfo().log("TravelConfig loaded. serverIds=" + cfg.getListenerTargets().keySet()
                 + " resolvedServerId=" + resolvedServerId
                 + " backendBaseUrl=" + cfg.getBackendBaseUrl()
                 + " backendTimeoutMs=" + cfg.getBackendTimeoutMs());
@@ -75,6 +76,8 @@ public class TravelPlugin extends JavaPlugin {
         CrashCheckpointService.start(cfg, backend);
 
         ServerHeartbeatService.start(cfg, backend);
+
+        GlobalChatWebSocketService.start(cfg);
 
         // Initialize final-persist gate so it can save/release after engine writes.
         FinalPersistGate.initialize(cfg, backend);
@@ -89,6 +92,9 @@ public class TravelPlugin extends JavaPlugin {
 
         RoutingUpdateLastBridge routingUpdateLastBridge = new RoutingUpdateLastBridge(cfg, backend);
         routingUpdateLastBridge.register(getEventRegistry());
+
+        GlobalChatBridge globalChatBridge = new GlobalChatBridge(cfg);
+        globalChatBridge.register(getEventRegistry());
 
         // Instrumentation: log disconnect timing vs last observed engine JSON write.
         DisconnectLogBridge disconnectLog = new DisconnectLogBridge();
@@ -119,7 +125,7 @@ public class TravelPlugin extends JavaPlugin {
                 TravelPlugin.class,
                 PORTAL_UI_PAGE_ID,
                 (Function<PlayerRef, com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage>) (playerRef) -> {
-                    List<String> serverIds = new ArrayList<>(cfg.getListenerPorts().keySet());
+                    List<String> serverIds = new ArrayList<>(cfg.getListenerTargets().keySet());
                     Collections.sort(serverIds);
                     return PortalChoicePage.create(playerRef, cfg, serverIds, 0);
                 }

@@ -46,7 +46,7 @@ public final class PortalUiCommand extends AbstractPlayerCommand {
             return;
         }
 
-        List<String> serverIds = new ArrayList<>(cfg.getListenerPorts().keySet());
+        List<String> serverIds = new ArrayList<>(cfg.getListenerTargets().keySet());
         Collections.sort(serverIds);
 
         if (serverIds.isEmpty()) {

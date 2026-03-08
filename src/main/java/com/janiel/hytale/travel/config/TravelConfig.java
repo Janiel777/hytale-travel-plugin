@@ -12,8 +12,25 @@ import java.util.Properties;
 
 public final class TravelConfig {
 
-    private final String proxyHost;
-    private final Map<String, Integer> listenerPorts;
+    public static final class ListenerTarget {
+        private final String host;
+        private final int port;
+
+        public ListenerTarget(String host, int port) {
+            this.host = host;
+            this.port = port;
+        }
+
+        public String getHost() {
+            return host;
+        }
+
+        public int getPort() {
+            return port;
+        }
+    }
+
+    private final Map<String, ListenerTarget> listenerTargets;
 
     private final String backendBaseUrl;
     private final int backendTimeoutMs;
@@ -25,17 +42,14 @@ public final class TravelConfig {
 
     private final java.nio.file.Path universeDir;
 
-
-    private TravelConfig(String proxyHost,
-                         Map<String, Integer> listenerPorts,
+    private TravelConfig(Map<String, ListenerTarget> listenerTargets,
                          String backendBaseUrl,
                          int backendTimeoutMs,
                          Map<Integer, String> serverIdByGamePort,
                          String payloadHmacSecret,
                          java.nio.file.Path universeDir) {
 
-        this.proxyHost = proxyHost;
-        this.listenerPorts = Collections.unmodifiableMap(listenerPorts);
+        this.listenerTargets = Collections.unmodifiableMap(listenerTargets);
 
         this.backendBaseUrl = backendBaseUrl;
         this.backendTimeoutMs = backendTimeoutMs;
@@ -43,25 +57,29 @@ public final class TravelConfig {
         this.serverIdByGamePort = Collections.unmodifiableMap(serverIdByGamePort);
 
         this.payloadHmacSecret = payloadHmacSecret;
-
         this.universeDir = universeDir;
-
     }
 
-    public String getProxyHost() {
-        return proxyHost;
-    }
-
-    public Map<String, Integer> getListenerPorts() {
-        return listenerPorts;
+    public Map<String, ListenerTarget> getListenerTargets() {
+        return listenerTargets;
     }
 
     public boolean hasServerId(String serverId) {
-        return listenerPorts.containsKey(serverId);
+        return listenerTargets.containsKey(serverId);
+    }
+
+    public ListenerTarget getListenerTarget(String serverId) {
+        return listenerTargets.get(serverId);
     }
 
     public Integer getListenerPort(String serverId) {
-        return listenerPorts.get(serverId);
+        ListenerTarget target = listenerTargets.get(serverId);
+        return target == null ? null : target.getPort();
+    }
+
+    public String getListenerHost(String serverId) {
+        ListenerTarget target = listenerTargets.get(serverId);
+        return target == null ? null : target.getHost();
     }
 
     public String getBackendBaseUrl() {
@@ -103,25 +121,17 @@ public final class TravelConfig {
             return null;
         }
 
-        // Examples:
-        //  "0.0.0.0:7001"
-        //  ":7001"
-        //  "7001"
-        //  "127.0.0.1:7001,quic"  (if they ever add suffixes; we just take last port-like token)
-        // Strategy: take last ':' segment if present; otherwise parse whole string as int.
         String candidate = s;
         int lastColon = s.lastIndexOf(':');
         if (lastColon >= 0 && lastColon + 1 < s.length()) {
             candidate = s.substring(lastColon + 1).trim();
         }
 
-        // If candidate has trailing junk, strip non-digits at end (best effort).
         int end = 0;
         while (end < candidate.length() && Character.isDigit(candidate.charAt(end))) {
             end++;
         }
         if (end == 0) {
-            // maybe the whole string is digits
             end = candidate.length();
         }
         String digits = candidate.substring(0, end).trim();
@@ -138,7 +148,6 @@ public final class TravelConfig {
     }
 
     public static TravelConfig load() {
-        // Optional override: -Dhytale.travel.config="C:\path\travel.properties"
         String externalPath = System.getProperty("hytale.travel.config");
         Properties props = new Properties();
 
@@ -158,8 +167,6 @@ public final class TravelConfig {
         } catch (Exception ex) {
             throw new IllegalStateException("Failed to load travel config", ex);
         }
-
-        String proxyHost = props.getProperty("proxyHost", "127.0.0.1").trim();
 
         String backendBaseUrl = props.getProperty("backendBaseUrl", "http://127.0.0.1:8000").trim();
         while (backendBaseUrl.endsWith("/")) {
@@ -194,28 +201,52 @@ public final class TravelConfig {
             }
         }
 
+        Map<String, String> hosts = new LinkedHashMap<>();
         Map<String, Integer> ports = new LinkedHashMap<>();
+
         for (String key : props.stringPropertyNames()) {
-            if (!key.startsWith("listenerPort.")) {
+            if (key.startsWith("listenerHost.")) {
+                String serverId = key.substring("listenerHost.".length()).trim();
+                String host = props.getProperty(key, "").trim();
+
+                if (!serverId.isEmpty() && !host.isEmpty()) {
+                    hosts.put(serverId, host);
+                }
                 continue;
             }
-            String serverId = key.substring("listenerPort.".length()).trim();
-            String rawPort = props.getProperty(key, "").trim();
 
-            if (serverId.isEmpty()) {
-                continue;
-            }
+            if (key.startsWith("listenerPort.")) {
+                String serverId = key.substring("listenerPort.".length()).trim();
+                String rawPort = props.getProperty(key, "").trim();
 
-            try {
-                int port = Integer.parseInt(rawPort);
-                ports.put(serverId, port);
-            } catch (NumberFormatException ignored) {
-                // Ignore invalid ports; command will behave as if serverId doesn't exist.
+                if (serverId.isEmpty()) {
+                    continue;
+                }
+
+                try {
+                    int port = Integer.parseInt(rawPort);
+                    ports.put(serverId, port);
+                } catch (NumberFormatException ignored) {
+                    // Ignore invalid ports; command will behave as if serverId doesn't exist.
+                }
             }
         }
 
-        if (ports.isEmpty()) {
-            throw new IllegalStateException("travel.properties has no listenerPort.<serverId>=<port> entries");
+        Map<String, ListenerTarget> listenerTargets = new LinkedHashMap<>();
+        for (Map.Entry<String, Integer> entry : ports.entrySet()) {
+            String serverId = entry.getKey();
+            Integer port = entry.getValue();
+            String host = hosts.get(serverId);
+
+            if (host == null || host.isBlank()) {
+                throw new IllegalStateException("Missing listenerHost." + serverId + " in travel.properties");
+            }
+
+            listenerTargets.put(serverId, new ListenerTarget(host, port));
+        }
+
+        if (listenerTargets.isEmpty()) {
+            throw new IllegalStateException("travel.properties has no valid listenerHost/listenerPort server mappings");
         }
 
         String payloadHmacSecret = props.getProperty("payloadHmacSecret", "").trim();
@@ -223,7 +254,13 @@ public final class TravelConfig {
         String universeDirStr = props.getProperty("universeDir", "universe").trim();
         java.nio.file.Path universeDir = java.nio.file.Path.of(universeDirStr);
 
-
-        return new TravelConfig(proxyHost, ports, backendBaseUrl, backendTimeoutMs, serverIdByGamePort, payloadHmacSecret, universeDir);
+        return new TravelConfig(
+                listenerTargets,
+                backendBaseUrl,
+                backendTimeoutMs,
+                serverIdByGamePort,
+                payloadHmacSecret,
+                universeDir
+        );
     }
 }

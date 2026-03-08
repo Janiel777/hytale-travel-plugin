@@ -15,7 +15,7 @@ import com.janiel.hytale.travel.net.BackendClient;
 import com.janiel.hytale.travel.util.PlayerIdUtil;
 
 import javax.annotation.Nonnull;
-import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 
 public class ClaimLatestCommand extends AbstractPlayerCommand {
@@ -54,7 +54,7 @@ public class ClaimLatestCommand extends AbstractPlayerCommand {
 
         if (!cfg.hasServerId(serverId)) {
             context.sendMessage(Message.raw("Unknown serverId: " + serverId));
-            context.sendMessage(Message.raw("Available: " + formatAvailable(cfg.getListenerPorts())));
+            context.sendMessage(Message.raw("Available: " + formatAvailable(cfg.getListenerTargets().keySet())));
             return;
         }
 
@@ -72,9 +72,9 @@ public class ClaimLatestCommand extends AbstractPlayerCommand {
         }
     }
 
-    private static String formatAvailable(Map<String, Integer> ports) {
+    private static String formatAvailable(Set<String> serverIds) {
         StringJoiner sj = new StringJoiner(", ");
-        for (String id : ports.keySet()) {
+        for (String id : serverIds) {
             sj.add(id);
         }
         return sj.toString();
