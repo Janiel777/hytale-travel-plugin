@@ -18,6 +18,6 @@
         
     },
     "DisabledByDefault": false,
-    "Main": "com.janiel.hytale.travel.TravelPlugin",
+    "Main": "com.janiel.hytale.HytalePlugin",
     "IncludesAssetPack": true
 }

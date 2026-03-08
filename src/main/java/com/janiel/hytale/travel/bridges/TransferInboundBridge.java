@@ -1,9 +1,9 @@
 package com.janiel.hytale.travel.bridges;
 
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.janiel.hytale.travel.config.TravelConfig;
+import com.janiel.hytale.core.config.TravelConfig;
 import com.janiel.hytale.travel.model.TravelPayload;
-import com.janiel.hytale.travel.net.BackendClient;
+import com.janiel.hytale.network.backend.BackendClient;
 
 import java.lang.reflect.Method;
 

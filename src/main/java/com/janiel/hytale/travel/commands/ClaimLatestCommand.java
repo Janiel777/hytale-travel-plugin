@@ -10,9 +10,9 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayer
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.janiel.hytale.travel.config.TravelConfig;
-import com.janiel.hytale.travel.net.BackendClient;
-import com.janiel.hytale.travel.util.PlayerIdUtil;
+import com.janiel.hytale.core.config.TravelConfig;
+import com.janiel.hytale.network.backend.BackendClient;
+import com.janiel.hytale.core.util.PlayerIdUtil;
 
 import javax.annotation.Nonnull;
 import java.util.Set;
