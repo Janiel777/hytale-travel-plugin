@@ -11,6 +11,7 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.config.cli
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.janiel.hytale.mutations.component.BowPerfectShotChargeTrackerComponent;
 import com.janiel.hytale.mutations.weapon.effects.BowPerfectShotDefinitions;
+import com.janiel.hytale.mutations.ui.hud.BowPerfectShotHudController;
 
 public final class PerfectShotChargingInteraction extends ChargingInteraction {
 
@@ -57,16 +58,19 @@ public final class PerfectShotChargingInteraction extends ChargingInteraction {
             return;
         }
 
-        float maxChargeSeconds = BowPerfectShotDefinitions.resolveMaxChargeSeconds(this.highestChargeValue);
-        float trackedChargeSeconds = Math.min(BowPerfectShotDefinitions.clampNonNegative(dt), maxChargeSeconds);
-        float normalizedCharge = BowPerfectShotDefinitions.normalizeChargeSeconds(trackedChargeSeconds, maxChargeSeconds);
+        float actualMaxChargeSeconds = BowPerfectShotDefinitions.resolveMaxChargeSeconds(this.highestChargeValue);
+        float trackedChargeSeconds = Math.min(
+                BowPerfectShotDefinitions.clampNonNegative(dt),
+                BowPerfectShotDefinitions.visualTimelineSeconds()
+        );
+        float normalizedCharge = BowPerfectShotDefinitions.normalizeVisualChargeSeconds(trackedChargeSeconds);
         int chargePercent = BowPerfectShotDefinitions.toPercent(normalizedCharge);
-        boolean inPerfectWindow = BowPerfectShotDefinitions.isPerfectShotNormalized(normalizedCharge);
+        boolean inPerfectWindow = BowPerfectShotDefinitions.isPerfectShotSeconds(trackedChargeSeconds);
 
         BowPerfectShotChargeTrackerComponent tracker = new BowPerfectShotChargeTrackerComponent(
                 trackedChargeSeconds,
                 normalizedCharge,
-                maxChargeSeconds,
+                actualMaxChargeSeconds,
                 held
         );
 
@@ -89,11 +93,19 @@ public final class PerfectShotChargingInteraction extends ChargingInteraction {
             );
         }
 
+        BowPerfectShotHudController.updateCharge(
+                shooterRef,
+                commandBuffer,
+                normalizedCharge,
+                actualMaxChargeSeconds
+        );
+
         LOGGER.atInfo().log("[BowPerfectShot] Charging tick. interactionType=" + interactionType
                 + " held=" + held
                 + " dt=" + dt
                 + " trackedChargeSeconds=" + trackedChargeSeconds
-                + " maxChargeSeconds=" + maxChargeSeconds
+                + " actualMaxChargeSeconds=" + actualMaxChargeSeconds
+                + " visualTimelineSeconds=" + BowPerfectShotDefinitions.visualTimelineSeconds()
                 + " normalizedCharge=" + normalizedCharge
                 + " chargePercent=" + chargePercent
                 + " perfectWindow=" + BowPerfectShotDefinitions.perfectWindowLabel()

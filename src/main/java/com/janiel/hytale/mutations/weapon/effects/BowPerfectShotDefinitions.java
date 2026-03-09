@@ -6,23 +6,41 @@ public final class BowPerfectShotDefinitions {
     }
 
     /**
-     * Default full charge for the shortbow chain.
-     * Runtime will prefer the value observed from ChargingInteraction.highestChargeValue when available.
+     * Actual shortbow max-damage charge time from the weapon chain.
      */
     public static float fullChargeSeconds() {
         return 1.20f;
     }
 
     /**
-     * Normalized range [0..1].
-     * Example: 0.10f = 10%, 0.95f = 95%.
+     * Visual HUD timeline.
+     * The shrinking circle keeps going after actual max damage so the player can
+     * see the overshoot phase.
+     */
+    public static float visualTimelineSeconds() {
+        return 1.50f;
+    }
+
+    /**
+     * Perfect shot should happen after actual max damage is already reached.
+     */
+    public static float perfectShotMinSeconds() {
+        return 1.2f;
+    }
+
+    public static float perfectShotMaxSeconds() {
+        return 1.35f;
+    }
+
+    /**
+     * Normalized against the visual timeline (1.5s).
      */
     public static float perfectShotMinNormalized() {
-        return 0.10f;
+        return clamp01(perfectShotMinSeconds() / visualTimelineSeconds());
     }
 
     public static float perfectShotMaxNormalized() {
-        return 0.95f;
+        return clamp01(perfectShotMaxSeconds() / visualTimelineSeconds());
     }
 
     public static float perfectShotDamageMultiplier() {
@@ -43,6 +61,9 @@ public final class BowPerfectShotDefinitions {
         return Math.max(0.0f, value);
     }
 
+    /**
+     * Resolves actual max weapon charge time, not the visual HUD timeline.
+     */
     public static float resolveMaxChargeSeconds(float observedMaxChargeSeconds) {
         if (observedMaxChargeSeconds > 0.0f) {
             return observedMaxChargeSeconds;
@@ -50,12 +71,15 @@ public final class BowPerfectShotDefinitions {
         return fullChargeSeconds();
     }
 
-    public static float normalizeChargeSeconds(float chargeSeconds, float maxChargeSeconds) {
-        float resolvedMax = resolveMaxChargeSeconds(maxChargeSeconds);
-        if (resolvedMax <= 0.0f) {
+    /**
+     * Normalized against the visual HUD timeline.
+     */
+    public static float normalizeVisualChargeSeconds(float chargeSeconds) {
+        float total = visualTimelineSeconds();
+        if (total <= 0.0f) {
             return 0.0f;
         }
-        return clamp01(clampNonNegative(chargeSeconds) / resolvedMax);
+        return clamp01(clampNonNegative(chargeSeconds) / total);
     }
 
     public static boolean isPerfectShotNormalized(float normalizedCharge) {
@@ -63,8 +87,9 @@ public final class BowPerfectShotDefinitions {
         return value >= perfectShotMinNormalized() && value <= perfectShotMaxNormalized();
     }
 
-    public static boolean isPerfectShotSeconds(float chargeSeconds, float maxChargeSeconds) {
-        return isPerfectShotNormalized(normalizeChargeSeconds(chargeSeconds, maxChargeSeconds));
+    public static boolean isPerfectShotSeconds(float chargeSeconds) {
+        float value = clampNonNegative(chargeSeconds);
+        return value >= perfectShotMinSeconds() && value <= perfectShotMaxSeconds();
     }
 
     public static int toPercent(float normalizedCharge) {

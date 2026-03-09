@@ -49,6 +49,7 @@ import com.janiel.hytale.mutations.interaction.PerfectShotChargingInteraction;
 import com.janiel.hytale.mutations.interaction.PerfectShotProjectileInteraction;
 import com.janiel.hytale.mutations.component.BowPerfectShotChargeTrackerComponent;
 import com.janiel.hytale.mutations.component.PendingPerfectShotComponent;
+import com.janiel.hytale.mutations.system.BowPerfectShotHudCleanupSystem;
 
 import javax.annotation.Nonnull;
 
@@ -227,6 +228,9 @@ public class HytalePlugin extends JavaPlugin {
 
         getEntityStoreRegistry().registerSystem(new BowPerfectShotDamageSystem());
         LOGGER.atInfo().log("Combat: BowPerfectShotDamageSystem registered (Projectile damage -> perfect shot multiplier)");
+
+        getEntityStoreRegistry().registerSystem(new BowPerfectShotHudCleanupSystem());
+        LOGGER.atInfo().log("Combat: BowPerfectShotHudCleanupSystem registered (DelayedEntitySystem)");
 
         LOGGER.atInfo().log("HytaleTravel setup done");
     }

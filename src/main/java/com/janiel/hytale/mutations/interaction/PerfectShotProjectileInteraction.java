@@ -21,6 +21,11 @@ import com.janiel.hytale.mutations.component.BowPerfectShotChargeTrackerComponen
 import com.janiel.hytale.mutations.component.PendingPerfectShotComponent;
 import com.janiel.hytale.mutations.component.PerfectShotMarkerComponent;
 import com.janiel.hytale.mutations.weapon.effects.BowPerfectShotDefinitions;
+import com.janiel.hytale.mutations.ui.hud.BowPerfectShotHudController;
+import com.hypixel.hytale.protocol.SoundCategory;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -29,6 +34,8 @@ public final class PerfectShotProjectileInteraction extends ProjectileInteractio
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static final AtomicLong SHOT_SEQUENCE = new AtomicLong(0L);
+
+    private static final String PERFECT_SHOT_LOCAL_SOUND_EVENT_ID = "SFX_Bow_T2_Signature_Shoot_Local";
 
     public static final BuilderCodec<PerfectShotProjectileInteraction> CODEC =
             BuilderCodec.builder(
@@ -108,9 +115,9 @@ public final class PerfectShotProjectileInteraction extends ProjectileInteractio
             }
         }
 
-        normalizedCharge = BowPerfectShotDefinitions.normalizeChargeSeconds(chargeSeconds, maxChargeSeconds);
+        normalizedCharge = BowPerfectShotDefinitions.normalizeVisualChargeSeconds(chargeSeconds);
         int chargePercent = BowPerfectShotDefinitions.toPercent(normalizedCharge);
-        boolean perfectShot = BowPerfectShotDefinitions.isPerfectShotNormalized(normalizedCharge);
+        boolean perfectShot = BowPerfectShotDefinitions.isPerfectShotSeconds(chargeSeconds);
         long shotSequence = SHOT_SEQUENCE.incrementAndGet();
 
         LOGGER.atInfo().log("[BowPerfectShot] Projectile firstRun. interactionType=" + interactionType
@@ -163,6 +170,8 @@ public final class PerfectShotProjectileInteraction extends ProjectileInteractio
             LOGGER.atWarning().log("[BowPerfectShot] PendingPerfectShotComponent type was null during projectile spawn.");
         }
 
+        BowPerfectShotHudController.release(shooterRef, commandBuffer);
+
         Ref<EntityStore> projectileRef = ProjectileModule.get().spawnProjectile(
                 generatedUuid,
                 shooterRef,
@@ -207,6 +216,8 @@ public final class PerfectShotProjectileInteraction extends ProjectileInteractio
         }
 
         if (perfectShot) {
+            playPerfectShotLocalSound(shooterRef, commandBuffer);
+
             LOGGER.atInfo().log("[BowPerfectShot] PERFECT SHOT confirmed at projectile spawn. projectileRef=" + projectileRef
                     + " configId=" + this.config
                     + " shotSequence=" + shotSequence
@@ -217,5 +228,55 @@ public final class PerfectShotProjectileInteraction extends ProjectileInteractio
                     + " shotSequence=" + shotSequence
                     + " perfectWindow=" + BowPerfectShotDefinitions.perfectWindowLabel());
         }
+    }
+
+    private static void playPerfectShotLocalSound(
+            Ref<EntityStore> shooterRef,
+            CommandBuffer<EntityStore> commandBuffer
+    ) {
+        if (shooterRef == null || commandBuffer == null) {
+            return;
+        }
+
+        if (PlayerRef.getComponentType() == null) {
+            LOGGER.atWarning().log("[BowPerfectShot] Could not play perfect shot sound because PlayerRef component type was null.");
+            return;
+        }
+
+        PlayerRef playerRef = commandBuffer.getComponent(
+                shooterRef,
+                PlayerRef.getComponentType()
+        );
+
+        if (playerRef == null || !playerRef.isValid()) {
+            LOGGER.atWarning().log("[BowPerfectShot] Could not play perfect shot sound because shooter PlayerRef was null/invalid.");
+            return;
+        }
+
+        if (SoundEvent.getAssetMap() == null) {
+            LOGGER.atWarning().log("[BowPerfectShot] Could not play perfect shot sound because SoundEvent asset map was null.");
+            return;
+        }
+
+        int soundEventIndex = SoundEvent.getAssetMap().getIndexOrDefault(
+                PERFECT_SHOT_LOCAL_SOUND_EVENT_ID,
+                -1
+        );
+
+        if (soundEventIndex < 0) {
+            LOGGER.atWarning().log("[BowPerfectShot] Could not resolve perfect shot sound event id: "
+                    + PERFECT_SHOT_LOCAL_SOUND_EVENT_ID);
+            return;
+        }
+
+        SoundUtil.playSoundEvent2dToPlayer(
+                playerRef,
+                soundEventIndex,
+                SoundCategory.SFX
+        );
+
+        LOGGER.atInfo().log("[BowPerfectShot] Perfect shot local sound played. player=" + playerRef.getUsername()
+                + " soundEventId=" + PERFECT_SHOT_LOCAL_SOUND_EVENT_ID
+                + " soundEventIndex=" + soundEventIndex);
     }
 }
