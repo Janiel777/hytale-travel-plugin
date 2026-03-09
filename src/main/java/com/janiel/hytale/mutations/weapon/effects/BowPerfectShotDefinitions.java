@@ -14,22 +14,22 @@ public final class BowPerfectShotDefinitions {
 
     /**
      * Visual HUD timeline.
-     * The shrinking circle keeps going after actual max damage so the player can
-     * see the overshoot phase.
+     * The bar keeps going after actual max damage so the player can
+     * see both the perfect-shot window and the overshoot phase.
      */
     public static float visualTimelineSeconds() {
-        return 1.50f;
+        return 2.00f;
     }
 
     /**
      * Perfect shot should happen after actual max damage is already reached.
      */
     public static float perfectShotMinSeconds() {
-        return 1.2f;
+        return 1.20f;
     }
 
     public static float perfectShotMaxSeconds() {
-        return 1.35f;
+        return 1.9f;
     }
 
     /**

@@ -74,24 +74,11 @@ public final class PerfectShotChargingInteraction extends ChargingInteraction {
                 held
         );
 
-        BowPerfectShotChargeTrackerComponent existing = commandBuffer.getComponent(
+        commandBuffer.putComponent(
                 shooterRef,
-                BowPerfectShotChargeTrackerComponent.getComponentType()
+                BowPerfectShotChargeTrackerComponent.getComponentType(),
+                tracker
         );
-
-        if (existing == null) {
-            commandBuffer.addComponent(
-                    shooterRef,
-                    BowPerfectShotChargeTrackerComponent.getComponentType(),
-                    tracker
-            );
-        } else {
-            commandBuffer.putComponent(
-                    shooterRef,
-                    BowPerfectShotChargeTrackerComponent.getComponentType(),
-                    tracker
-            );
-        }
 
         BowPerfectShotHudController.updateCharge(
                 shooterRef,
