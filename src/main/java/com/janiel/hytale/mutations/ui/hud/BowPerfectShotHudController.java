@@ -24,27 +24,46 @@ public final class BowPerfectShotHudController {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     private static final String CHARGE_BAR_ID = "janielPerfectShotChargeBar";
+    private static final String CHARGE_BAR_FILL_ID = "janielPerfectShotChargeFill";
     private static final String PERFECT_WINDOW_LEFT_MARKER_ID = "janielPerfectShotWindowLeftMarker";
     private static final String PERFECT_WINDOW_RIGHT_MARKER_ID = "janielPerfectShotWindowRightMarker";
 
-    private static final int CHARGE_BAR_FRAME_COUNT = 60;
-    private static final int CHARGE_BAR_WIDTH = 300;
-    private static final int CHARGE_BAR_HEIGHT = 24;
-    private static final String CHARGE_BAR_IMAGE_TEMPLATE = "Charge-Bar/Bar_Sprite_%d.png";
+    private static final float HUD_SCALE = 0.50f;
 
-    private static final String PERFECT_WINDOW_MARKER_IMAGE = "Charge-Bar/Bar_Marker.png";
-    private static final int PERFECT_WINDOW_MARKER_WIDTH = 5;
-    private static final int PERFECT_WINDOW_MARKER_HEIGHT = 34;
+    private static final int BASE_CHARGE_BAR_WIDTH = 300;
+    private static final int BASE_CHARGE_BAR_HEIGHT = 24;
+    private static final String CHARGE_BAR_IMAGE = "Charge-Bar/Bar.png";
+    private static final String CHARGE_BAR_FILL_IMAGE = "Charge-Bar/Filler.png";
 
-    private static final int HUD_CANVAS_WIDTH = 300;
-    private static final int HUD_CANVAS_HEIGHT = 114;
-    private static final int CHARGE_BAR_TOP = 85;
-    private static final int MARKER_TOP = 80;
+    private static final String PERFECT_WINDOW_MARKER_IMAGE = "Charge-Bar/Marker.png";
+    private static final int BASE_PERFECT_WINDOW_MARKER_WIDTH = 5;
+    private static final int BASE_PERFECT_WINDOW_MARKER_HEIGHT = 34;
+
+    private static final int BASE_HUD_CANVAS_WIDTH = 300;
+    private static final int BASE_HUD_CANVAS_HEIGHT = 114;
+    private static final int BASE_CHARGE_BAR_TOP = 110;
+    private static final int BASE_MARKER_TOP = 105;
+
+    private static final int CHARGE_BAR_WIDTH = scale(BASE_CHARGE_BAR_WIDTH);
+    private static final int CHARGE_BAR_HEIGHT = scale(BASE_CHARGE_BAR_HEIGHT);
+    private static final int PERFECT_WINDOW_MARKER_WIDTH = scale(BASE_PERFECT_WINDOW_MARKER_WIDTH);
+    private static final int PERFECT_WINDOW_MARKER_HEIGHT = scale(BASE_PERFECT_WINDOW_MARKER_HEIGHT);
+
+    private static final int HUD_CANVAS_WIDTH = scale(BASE_HUD_CANVAS_WIDTH);
+    private static final int HUD_CANVAS_HEIGHT = scale(BASE_HUD_CANVAS_HEIGHT);
+    private static final int CHARGE_BAR_TOP = scale(BASE_CHARGE_BAR_TOP);
+    private static final int MARKER_TOP = scale(BASE_MARKER_TOP);
+    private static final float PERFECT_WINDOW_VISUAL_OFFSET = -0.01f;
 
     private static final int PERFECT_WINDOW_LEFT_MARKER_LEFT =
-            resolveMarkerLeftPixels(BowPerfectShotDefinitions.perfectShotMinNormalized());
+            resolveMarkerLeftPixels(
+                    BowPerfectShotDefinitions.perfectShotMinNormalized() + PERFECT_WINDOW_VISUAL_OFFSET
+            );
+
     private static final int PERFECT_WINDOW_RIGHT_MARKER_LEFT =
-            resolveMarkerLeftPixels(BowPerfectShotDefinitions.perfectShotMaxNormalized());
+            resolveMarkerLeftPixels(
+                    BowPerfectShotDefinitions.perfectShotMaxNormalized() + PERFECT_WINDOW_VISUAL_OFFSET
+            );
 
     private static final long SESSION_TIMEOUT_NANOS = 400_000_000L;
     private static final long HUD_REFRESH_RATE_MS = 10L;
@@ -53,9 +72,8 @@ public final class BowPerfectShotHudController {
     private static final ConcurrentMap<UUID, HyUIHud> ACTIVE_HUDS = new ConcurrentHashMap<>();
     private static final ConcurrentMap<UUID, PlayerRef> ACTIVE_PLAYER_REFS = new ConcurrentHashMap<>();
     private static final ConcurrentMap<UUID, Long> LAST_UPDATE_NANOS = new ConcurrentHashMap<>();
-    private static final ConcurrentMap<UUID, Integer> LAST_LOGGED_FRAME_BY_PLAYER = new ConcurrentHashMap<>();
-    private static final ConcurrentMap<UUID, Long> LAST_LOGGED_FRAME_NANOS_BY_PLAYER = new ConcurrentHashMap<>();
-
+    private static final ConcurrentMap<UUID, Integer> LAST_LOGGED_FILL_WIDTH_BY_PLAYER = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<UUID, Long> LAST_LOGGED_FILL_NANOS_BY_PLAYER = new ConcurrentHashMap<>();
     private BowPerfectShotHudController() {
     }
 
@@ -110,8 +128,8 @@ public final class BowPerfectShotHudController {
         SESSIONS.remove(playerRef.getUuid());
         ACTIVE_PLAYER_REFS.remove(playerRef.getUuid());
         LAST_UPDATE_NANOS.remove(playerRef.getUuid());
-        LAST_LOGGED_FRAME_BY_PLAYER.remove(playerRef.getUuid());
-        LAST_LOGGED_FRAME_NANOS_BY_PLAYER.remove(playerRef.getUuid());
+        LAST_LOGGED_FILL_WIDTH_BY_PLAYER.remove(playerRef.getUuid());
+        LAST_LOGGED_FILL_NANOS_BY_PLAYER.remove(playerRef.getUuid());
 //        showReticle(playerRef);
     }
 
@@ -168,12 +186,21 @@ public final class BowPerfectShotHudController {
     }
 
     private static HyUIHud buildHud(PlayerRef playerRef, ChargeSession session) {
-        String frameImage = resolveChargeBarFrameImage(session.getNormalizedCharge());
-
-        return HudBuilder.hudForPlayer(playerRef)
+        HyUIHud hud = HudBuilder.hudForPlayer(playerRef)
                 .withRefreshRate(HUD_REFRESH_RATE_MS)
-                .fromHtml(buildHudHtml(frameImage))
+                .fromHtml(buildHudHtml())
                 .show(playerRef);
+
+        hud.setRefreshListener(refreshedHud -> {
+            ChargeSession latestSession = SESSIONS.get(playerRef.getUuid());
+            if (latestSession == null) {
+                return;
+            }
+
+            applyStateToHud(playerRef.getUuid(), refreshedHud, latestSession);
+        });
+
+        return hud;
     }
 
     private static void applyStateToHud(UUID playerUuid, HyUIHud hud, ChargeSession session) {
@@ -181,16 +208,30 @@ public final class BowPerfectShotHudController {
             return;
         }
 
-        int currentFrame = resolveChargeBarFrameNumber(session.getNormalizedCharge());
-        String frameImage = resolveChargeBarFrameImage(currentFrame);
-        int filledPixels = currentFrame * 5;
-        float visualChargeSeconds =
-                BowPerfectShotDefinitions.clamp01(session.getNormalizedCharge())
-                        * BowPerfectShotDefinitions.visualTimelineSeconds();
+        long now = System.nanoTime();
+
+        float visualChargeSeconds = resolveVisualChargeSeconds(session);
+        int filledPixels = resolveFillWidthPixels(visualChargeSeconds);
 
         hud.getById(CHARGE_BAR_ID, ImageBuilder.class).ifPresent(image -> {
-            image.withImage(frameImage);
+            image.withImage(CHARGE_BAR_IMAGE);
             image.withVisible(true);
+        });
+
+        hud.getById(CHARGE_BAR_FILL_ID, ImageBuilder.class).ifPresent(image -> {
+            HyUIAnchor anchor = image.getAnchor();
+            if (anchor == null) {
+                anchor = new HyUIAnchor();
+            }
+
+            anchor.setLeft(0);
+            anchor.setTop(CHARGE_BAR_TOP);
+            anchor.setWidth(filledPixels);
+            anchor.setHeight(CHARGE_BAR_HEIGHT);
+
+            image.withAnchor(anchor);
+            image.withImage(CHARGE_BAR_FILL_IMAGE);
+            image.withVisible(filledPixels > 0);
         });
 
         hud.getById(PERFECT_WINDOW_LEFT_MARKER_ID, ImageBuilder.class).ifPresent(image -> {
@@ -205,38 +246,30 @@ public final class BowPerfectShotHudController {
 
         hud.updatePage(true);
 
-        Integer previousFrame = LAST_LOGGED_FRAME_BY_PLAYER.put(playerUuid, currentFrame);
-        long now = System.nanoTime();
-        Long previousFrameNanos = LAST_LOGGED_FRAME_NANOS_BY_PLAYER.put(playerUuid, now);
+        Integer previousFillWidth = LAST_LOGGED_FILL_WIDTH_BY_PLAYER.put(playerUuid, filledPixels);
+        Long previousFillNanos = LAST_LOGGED_FILL_NANOS_BY_PLAYER.put(playerUuid, now);
 
-        if (previousFrame == null || previousFrame != currentFrame) {
-            long deltaMsSinceLastFrame = previousFrameNanos == null
+        if (previousFillWidth == null || previousFillWidth != filledPixels) {
+            long deltaMsSinceLastFill = previousFillNanos == null
                     ? -1L
-                    : (now - previousFrameNanos) / 1_000_000L;
+                    : (now - previousFillNanos) / 1_000_000L;
 
-            int skippedFrames = 0;
-            boolean frameReset = false;
+            int deltaPixels = previousFillWidth == null
+                    ? 0
+                    : filledPixels - previousFillWidth;
 
-            if (previousFrame != null) {
-                if (currentFrame > previousFrame) {
-                    skippedFrames = Math.max(0, currentFrame - previousFrame - 1);
-                } else if (currentFrame < previousFrame) {
-                    frameReset = true;
-                }
-            }
+            boolean fillReset = previousFillWidth != null && filledPixels < previousFillWidth;
 
             LOGGER.atInfo().log(
-                    "[BowPerfectShotHud] Frame drawn. playerUuid=" + playerUuid
-                            + " previousFrame=" + previousFrame
-                            + " currentFrame=" + currentFrame + "/" + CHARGE_BAR_FRAME_COUNT
-                            + " skippedFrames=" + skippedFrames
-                            + " frameReset=" + frameReset
-                            + " deltaMsSinceLastFrame=" + deltaMsSinceLastFrame
-                            + " frameImage=" + frameImage
+                    "[BowPerfectShotHud] Fill updated. playerUuid=" + playerUuid
+                            + " previousFillWidth=" + previousFillWidth
+                            + " currentFillWidth=" + filledPixels + "/" + CHARGE_BAR_WIDTH
+                            + " deltaPixels=" + deltaPixels
+                            + " fillReset=" + fillReset
+                            + " deltaMsSinceLastFill=" + deltaMsSinceLastFill
                             + " normalizedCharge=" + session.getNormalizedCharge()
                             + " visualChargeSeconds=" + visualChargeSeconds
                             + " visualTimelineSeconds=" + BowPerfectShotDefinitions.visualTimelineSeconds()
-                            + " filledPixels=" + filledPixels + "/" + CHARGE_BAR_WIDTH
                             + " leftMarkerLeft=" + PERFECT_WINDOW_LEFT_MARKER_LEFT
                             + " rightMarkerLeft=" + PERFECT_WINDOW_RIGHT_MARKER_LEFT
                             + " actualMaxChargeSeconds=" + session.getMaxChargeSeconds()
@@ -244,31 +277,42 @@ public final class BowPerfectShotHudController {
         }
     }
 
-    private static String resolveChargeBarFrameImage(float normalizedCharge) {
-        int frameNumber = resolveChargeBarFrameNumber(normalizedCharge);
-        return resolveChargeBarFrameImage(frameNumber);
+    private static float resolveVisualChargeSeconds(ChargeSession session) {
+        return Math.min(
+                BowPerfectShotDefinitions.clamp01(session.getNormalizedCharge())
+                        * BowPerfectShotDefinitions.visualTimelineSeconds(),
+                BowPerfectShotDefinitions.visualTimelineSeconds()
+        );
     }
 
-    private static String resolveChargeBarFrameImage(int frameNumber) {
-        return String.format(CHARGE_BAR_IMAGE_TEMPLATE, frameNumber);
-    }
+    private static int resolveFillWidthPixels(float visualChargeSeconds) {
+        float visualTimelineSeconds = BowPerfectShotDefinitions.visualTimelineSeconds();
+        if (visualTimelineSeconds <= 0.0f) {
+            return 0;
+        }
 
-    private static int resolveChargeBarFrameNumber(float normalizedCharge) {
-        int frameNumber = 1 + (int) Math.floor(
-                BowPerfectShotDefinitions.clamp01(normalizedCharge) * (CHARGE_BAR_FRAME_COUNT - 1)
+        float normalized =
+                BowPerfectShotDefinitions.clampNonNegative(visualChargeSeconds)
+                        / visualTimelineSeconds;
+
+        int filledPixels = Math.round(
+                BowPerfectShotDefinitions.clamp01(normalized) * CHARGE_BAR_WIDTH
         );
 
-        if (frameNumber < 1) {
-            return 1;
+        if (filledPixels < 0) {
+            return 0;
         }
 
-        if (frameNumber > CHARGE_BAR_FRAME_COUNT) {
-            return CHARGE_BAR_FRAME_COUNT;
+        if (filledPixels > CHARGE_BAR_WIDTH) {
+            return CHARGE_BAR_WIDTH;
         }
 
-        return frameNumber;
+        return filledPixels;
     }
 
+    private static int scale(int value) {
+        return Math.max(1, Math.round(value * HUD_SCALE));
+    }
 
     private static int resolveMarkerLeftPixels(float normalizedBoundary) {
         int boundaryPixelsFromLeft = Math.round(
@@ -287,7 +331,7 @@ public final class BowPerfectShotHudController {
         return boundaryPixelsFromLeft;
     }
 
-    private static String buildHudHtml(String frameImage) {
+    private static String buildHudHtml() {
         return String.format(
                 Locale.ROOT,
                 """
@@ -297,6 +341,9 @@ public final class BowPerfectShotHudController {
                       <img id="%s"
                            src="%s"
                            style="anchor-left: 0; anchor-top: %d; anchor-width: %d; anchor-height: %d;" />
+                      <img id="%s"
+                           src="%s"
+                           style="anchor-left: 0; anchor-top: %d; anchor-width: 0; anchor-height: %d;" />
                       <img id="%s"
                            src="%s"
                            style="anchor-left: %d; anchor-top: %d; anchor-width: %d; anchor-height: %d;" />
@@ -310,9 +357,13 @@ public final class BowPerfectShotHudController {
                 HUD_CANVAS_WIDTH,
                 HUD_CANVAS_HEIGHT,
                 CHARGE_BAR_ID,
-                frameImage,
+                CHARGE_BAR_IMAGE,
                 CHARGE_BAR_TOP,
                 CHARGE_BAR_WIDTH,
+                CHARGE_BAR_HEIGHT,
+                CHARGE_BAR_FILL_ID,
+                CHARGE_BAR_FILL_IMAGE,
+                CHARGE_BAR_TOP,
                 CHARGE_BAR_HEIGHT,
                 PERFECT_WINDOW_LEFT_MARKER_ID,
                 PERFECT_WINDOW_MARKER_IMAGE,
@@ -336,8 +387,8 @@ public final class BowPerfectShotHudController {
             ACTIVE_PLAYER_REFS.remove(playerUuid);
             LAST_UPDATE_NANOS.remove(playerUuid);
             SESSIONS.remove(playerUuid);
-            LAST_LOGGED_FRAME_BY_PLAYER.remove(playerUuid);
-            LAST_LOGGED_FRAME_NANOS_BY_PLAYER.remove(playerUuid);
+            LAST_LOGGED_FILL_WIDTH_BY_PLAYER.remove(playerUuid);
+            LAST_LOGGED_FILL_NANOS_BY_PLAYER.remove(playerUuid);
 //            showReticle(playerRef);
         }
 

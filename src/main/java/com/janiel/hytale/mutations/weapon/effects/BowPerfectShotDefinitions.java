@@ -29,7 +29,7 @@ public final class BowPerfectShotDefinitions {
     }
 
     public static float perfectShotMaxSeconds() {
-        return 1.9f;
+        return 1.30f;
     }
 
     /**
