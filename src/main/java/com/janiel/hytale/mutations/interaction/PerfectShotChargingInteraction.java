@@ -8,10 +8,13 @@ import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.ChargingInteraction;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.janiel.hytale.mutations.component.BowPerfectShotChargeTrackerComponent;
 import com.janiel.hytale.mutations.weapon.effects.BowPerfectShotDefinitions;
 import com.janiel.hytale.mutations.ui.hud.BowPerfectShotHudController;
+import com.janiel.hytale.mutations.persistence.MutationsCache;
+import com.janiel.hytale.mutations.persistence.MutationsState;
 
 public final class PerfectShotChargingInteraction extends ChargingInteraction {
 
@@ -64,8 +67,18 @@ public final class PerfectShotChargingInteraction extends ChargingInteraction {
                 BowPerfectShotDefinitions.visualTimelineSeconds()
         );
         float normalizedCharge = BowPerfectShotDefinitions.normalizeVisualChargeSeconds(trackedChargeSeconds);
+
+        int bowMutationLevel = 0;
+        PlayerRef playerRef = commandBuffer.getComponent(shooterRef, PlayerRef.getComponentType());
+        if (playerRef != null) {
+            MutationsState state = MutationsCache.getOrLoad(playerRef.getUuid());
+            if (state != null) {
+                bowMutationLevel = state.getBowLevel();
+            }
+        }
+
         int chargePercent = BowPerfectShotDefinitions.toPercent(normalizedCharge);
-        boolean inPerfectWindow = BowPerfectShotDefinitions.isPerfectShotSeconds(trackedChargeSeconds);
+        boolean inPerfectWindow = BowPerfectShotDefinitions.isPerfectShotSeconds(trackedChargeSeconds, bowMutationLevel);
 
         BowPerfectShotChargeTrackerComponent tracker = new BowPerfectShotChargeTrackerComponent(
                 trackedChargeSeconds,
@@ -84,7 +97,8 @@ public final class PerfectShotChargingInteraction extends ChargingInteraction {
                 shooterRef,
                 commandBuffer,
                 normalizedCharge,
-                actualMaxChargeSeconds
+                actualMaxChargeSeconds,
+                bowMutationLevel
         );
 
         LOGGER.atInfo().log("[BowPerfectShot] Charging tick. interactionType=" + interactionType
@@ -95,7 +109,8 @@ public final class PerfectShotChargingInteraction extends ChargingInteraction {
                 + " visualTimelineSeconds=" + BowPerfectShotDefinitions.visualTimelineSeconds()
                 + " normalizedCharge=" + normalizedCharge
                 + " chargePercent=" + chargePercent
-                + " perfectWindow=" + BowPerfectShotDefinitions.perfectWindowLabel()
+                + " bowMutationLevel=" + bowMutationLevel
+                + " perfectWindow=" + BowPerfectShotDefinitions.perfectWindowLabel(bowMutationLevel)
                 + " inPerfectWindow=" + inPerfectWindow
                 + " highestChargeValue=" + this.highestChargeValue);
     }

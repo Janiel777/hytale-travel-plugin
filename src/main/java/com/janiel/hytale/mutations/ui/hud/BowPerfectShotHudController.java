@@ -55,15 +55,7 @@ public final class BowPerfectShotHudController {
     private static final int MARKER_TOP = scale(BASE_MARKER_TOP);
     private static final float PERFECT_WINDOW_VISUAL_OFFSET = -0.01f;
 
-    private static final int PERFECT_WINDOW_LEFT_MARKER_LEFT =
-            resolveMarkerLeftPixels(
-                    BowPerfectShotDefinitions.perfectShotMinNormalized() + PERFECT_WINDOW_VISUAL_OFFSET
-            );
 
-    private static final int PERFECT_WINDOW_RIGHT_MARKER_LEFT =
-            resolveMarkerLeftPixels(
-                    BowPerfectShotDefinitions.perfectShotMaxNormalized() + PERFECT_WINDOW_VISUAL_OFFSET
-            );
 
     private static final long SESSION_TIMEOUT_NANOS = 400_000_000L;
     private static final long HUD_REFRESH_RATE_MS = 10L;
@@ -81,7 +73,8 @@ public final class BowPerfectShotHudController {
             Ref<EntityStore> entityRef,
             CommandBuffer<EntityStore> commandBuffer,
             float normalizedCharge,
-            float maxChargeSeconds
+            float maxChargeSeconds,
+            int bowMutationLevel
     ) {
         PlayerRef playerRef = getPlayerRef(entityRef, commandBuffer);
         if (playerRef == null || !playerRef.isValid()) {
@@ -94,6 +87,7 @@ public final class BowPerfectShotHudController {
         ChargeSession session = new ChargeSession(
                 BowPerfectShotDefinitions.clamp01(normalizedCharge),
                 BowPerfectShotDefinitions.clampNonNegative(maxChargeSeconds),
+                BowPerfectShotDefinitions.clampMutationLevel(bowMutationLevel),
                 now + SESSION_TIMEOUT_NANOS
         );
 
@@ -188,7 +182,7 @@ public final class BowPerfectShotHudController {
     private static HyUIHud buildHud(PlayerRef playerRef, ChargeSession session) {
         HyUIHud hud = HudBuilder.hudForPlayer(playerRef)
                 .withRefreshRate(HUD_REFRESH_RATE_MS)
-                .fromHtml(buildHudHtml())
+                .fromHtml(buildHudHtml(session))
                 .show(playerRef);
 
         hud.setRefreshListener(refreshedHud -> {
@@ -213,6 +207,16 @@ public final class BowPerfectShotHudController {
         float visualChargeSeconds = resolveVisualChargeSeconds(session);
         int filledPixels = resolveFillWidthPixels(visualChargeSeconds);
 
+        int leftMarkerLeft = resolveMarkerLeftPixels(
+                BowPerfectShotDefinitions.perfectShotMinNormalized(session.getBowMutationLevel())
+                        + PERFECT_WINDOW_VISUAL_OFFSET
+        );
+
+        int rightMarkerLeft = resolveMarkerLeftPixels(
+                BowPerfectShotDefinitions.perfectShotMaxNormalized(session.getBowMutationLevel())
+                        + PERFECT_WINDOW_VISUAL_OFFSET
+        );
+
         hud.getById(CHARGE_BAR_ID, ImageBuilder.class).ifPresent(image -> {
             image.withImage(CHARGE_BAR_IMAGE);
             image.withVisible(true);
@@ -235,11 +239,33 @@ public final class BowPerfectShotHudController {
         });
 
         hud.getById(PERFECT_WINDOW_LEFT_MARKER_ID, ImageBuilder.class).ifPresent(image -> {
+            HyUIAnchor anchor = image.getAnchor();
+            if (anchor == null) {
+                anchor = new HyUIAnchor();
+            }
+
+            anchor.setLeft(leftMarkerLeft);
+            anchor.setTop(MARKER_TOP);
+            anchor.setWidth(PERFECT_WINDOW_MARKER_WIDTH);
+            anchor.setHeight(PERFECT_WINDOW_MARKER_HEIGHT);
+
+            image.withAnchor(anchor);
             image.withImage(PERFECT_WINDOW_MARKER_IMAGE);
             image.withVisible(true);
         });
 
         hud.getById(PERFECT_WINDOW_RIGHT_MARKER_ID, ImageBuilder.class).ifPresent(image -> {
+            HyUIAnchor anchor = image.getAnchor();
+            if (anchor == null) {
+                anchor = new HyUIAnchor();
+            }
+
+            anchor.setLeft(rightMarkerLeft);
+            anchor.setTop(MARKER_TOP);
+            anchor.setWidth(PERFECT_WINDOW_MARKER_WIDTH);
+            anchor.setHeight(PERFECT_WINDOW_MARKER_HEIGHT);
+
+            image.withAnchor(anchor);
             image.withImage(PERFECT_WINDOW_MARKER_IMAGE);
             image.withVisible(true);
         });
@@ -270,8 +296,9 @@ public final class BowPerfectShotHudController {
                             + " normalizedCharge=" + session.getNormalizedCharge()
                             + " visualChargeSeconds=" + visualChargeSeconds
                             + " visualTimelineSeconds=" + BowPerfectShotDefinitions.visualTimelineSeconds()
-                            + " leftMarkerLeft=" + PERFECT_WINDOW_LEFT_MARKER_LEFT
-                            + " rightMarkerLeft=" + PERFECT_WINDOW_RIGHT_MARKER_LEFT
+                            + " bowMutationLevel=" + session.getBowMutationLevel()
+                            + " leftMarkerLeft=" + leftMarkerLeft
+                            + " rightMarkerLeft=" + rightMarkerLeft
                             + " actualMaxChargeSeconds=" + session.getMaxChargeSeconds()
             );
         }
@@ -331,7 +358,18 @@ public final class BowPerfectShotHudController {
         return boundaryPixelsFromLeft;
     }
 
-    private static String buildHudHtml() {
+    private static String buildHudHtml(ChargeSession session) {
+
+        int leftMarkerLeft = resolveMarkerLeftPixels(
+                BowPerfectShotDefinitions.perfectShotMinNormalized(session.getBowMutationLevel())
+                        + PERFECT_WINDOW_VISUAL_OFFSET
+        );
+
+        int rightMarkerLeft = resolveMarkerLeftPixels(
+                BowPerfectShotDefinitions.perfectShotMaxNormalized(session.getBowMutationLevel())
+                        + PERFECT_WINDOW_VISUAL_OFFSET
+        );
+
         return String.format(
                 Locale.ROOT,
                 """
@@ -367,13 +405,13 @@ public final class BowPerfectShotHudController {
                 CHARGE_BAR_HEIGHT,
                 PERFECT_WINDOW_LEFT_MARKER_ID,
                 PERFECT_WINDOW_MARKER_IMAGE,
-                PERFECT_WINDOW_LEFT_MARKER_LEFT,
+                leftMarkerLeft,
                 MARKER_TOP,
                 PERFECT_WINDOW_MARKER_WIDTH,
                 PERFECT_WINDOW_MARKER_HEIGHT,
                 PERFECT_WINDOW_RIGHT_MARKER_ID,
                 PERFECT_WINDOW_MARKER_IMAGE,
-                PERFECT_WINDOW_RIGHT_MARKER_LEFT,
+                rightMarkerLeft,
                 MARKER_TOP,
                 PERFECT_WINDOW_MARKER_WIDTH,
                 PERFECT_WINDOW_MARKER_HEIGHT
@@ -458,15 +496,18 @@ public final class BowPerfectShotHudController {
 
         private final float normalizedCharge;
         private final float maxChargeSeconds;
+        private final int bowMutationLevel;
         private final long expiresAtNanos;
 
         private ChargeSession(
                 float normalizedCharge,
                 float maxChargeSeconds,
+                int bowMutationLevel,
                 long expiresAtNanos
         ) {
             this.normalizedCharge = normalizedCharge;
             this.maxChargeSeconds = maxChargeSeconds;
+            this.bowMutationLevel = bowMutationLevel;
             this.expiresAtNanos = expiresAtNanos;
         }
 
@@ -476,6 +517,10 @@ public final class BowPerfectShotHudController {
 
         public float getMaxChargeSeconds() {
             return maxChargeSeconds;
+        }
+
+        public int getBowMutationLevel() {
+            return bowMutationLevel;
         }
 
         public long getExpiresAtNanos() {

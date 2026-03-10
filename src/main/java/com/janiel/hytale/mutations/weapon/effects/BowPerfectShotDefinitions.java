@@ -2,6 +2,27 @@ package com.janiel.hytale.mutations.weapon.effects;
 
 public final class BowPerfectShotDefinitions {
 
+    private static final float FULL_CHARGE_SECONDS = 1.20f;
+    private static final float VISUAL_TIMELINE_SECONDS = 2.00f;
+
+    private static final float BASE_PERFECT_SHOT_MIN_SECONDS = 1.20f;
+    private static final float BASE_PERFECT_SHOT_MAX_SECONDS = 1.30f;
+
+    private static final float BASE_PERFECT_SHOT_DAMAGE_MULTIPLIER = 1.50f;
+    private static final float PERFECT_SHOT_DAMAGE_BONUS_PER_LEVEL = 0.10f;
+
+    /**
+     * We keep the left boundary fixed at 60% of the 2.0s HUD bar.
+     * Level 0 -> 60%-65%
+     * Level 3 -> 60%-70%
+     *
+     * So the right boundary grows linearly by:
+     * (0.70 - 0.65) / 3 = 0.016666667 per level
+     */
+    private static final float BASE_PERFECT_SHOT_MIN_NORMALIZED = 0.60f;
+    private static final float BASE_PERFECT_SHOT_MAX_NORMALIZED = 0.65f;
+    private static final float PERFECT_SHOT_MAX_NORMALIZED_BONUS_PER_LEVEL = 0.05f / 3.0f;
+
     private BowPerfectShotDefinitions() {
     }
 
@@ -9,7 +30,7 @@ public final class BowPerfectShotDefinitions {
      * Actual shortbow max-damage charge time from the weapon chain.
      */
     public static float fullChargeSeconds() {
-        return 1.20f;
+        return FULL_CHARGE_SECONDS;
     }
 
     /**
@@ -18,33 +39,56 @@ public final class BowPerfectShotDefinitions {
      * see both the perfect-shot window and the overshoot phase.
      */
     public static float visualTimelineSeconds() {
-        return 2.00f;
+        return VISUAL_TIMELINE_SECONDS;
     }
 
     /**
-     * Perfect shot should happen after actual max damage is already reached.
+     * Base no-level overloads kept for compatibility.
+     * These preserve level 0 behavior.
      */
     public static float perfectShotMinSeconds() {
-        return 1.20f;
+        return perfectShotMinSeconds(0);
     }
 
     public static float perfectShotMaxSeconds() {
-        return 1.30f;
+        return perfectShotMaxSeconds(0);
     }
 
-    /**
-     * Normalized against the visual timeline (1.5s).
-     */
     public static float perfectShotMinNormalized() {
-        return clamp01(perfectShotMinSeconds() / visualTimelineSeconds());
+        return perfectShotMinNormalized(0);
     }
 
     public static float perfectShotMaxNormalized() {
-        return clamp01(perfectShotMaxSeconds() / visualTimelineSeconds());
+        return perfectShotMaxNormalized(0);
     }
 
     public static float perfectShotDamageMultiplier() {
-        return 1.50f;
+        return perfectShotDamageMultiplier(0);
+    }
+
+    /**
+     * Level-aware overloads.
+     */
+    public static float perfectShotMinSeconds(int mutationLevel) {
+        return visualTimelineSeconds() * perfectShotMinNormalized(mutationLevel);
+    }
+
+    public static float perfectShotMaxSeconds(int mutationLevel) {
+        return visualTimelineSeconds() * perfectShotMaxNormalized(mutationLevel);
+    }
+
+    public static float perfectShotMinNormalized(int mutationLevel) {
+        return BASE_PERFECT_SHOT_MIN_NORMALIZED;
+    }
+
+    public static float perfectShotMaxNormalized(int mutationLevel) {
+        int level = clampMutationLevel(mutationLevel);
+        return clamp01(BASE_PERFECT_SHOT_MAX_NORMALIZED + (PERFECT_SHOT_MAX_NORMALIZED_BONUS_PER_LEVEL * level));
+    }
+
+    public static float perfectShotDamageMultiplier(int mutationLevel) {
+        int level = clampMutationLevel(mutationLevel);
+        return BASE_PERFECT_SHOT_DAMAGE_MULTIPLIER + (PERFECT_SHOT_DAMAGE_BONUS_PER_LEVEL * level);
     }
 
     public static float clamp01(float value) {
@@ -59,6 +103,16 @@ public final class BowPerfectShotDefinitions {
 
     public static float clampNonNegative(float value) {
         return Math.max(0.0f, value);
+    }
+
+    public static int clampMutationLevel(int mutationLevel) {
+        if (mutationLevel <= 0) {
+            return 0;
+        }
+        if (mutationLevel >= 3) {
+            return 3;
+        }
+        return mutationLevel;
     }
 
     /**
@@ -83,13 +137,23 @@ public final class BowPerfectShotDefinitions {
     }
 
     public static boolean isPerfectShotNormalized(float normalizedCharge) {
+        return isPerfectShotNormalized(normalizedCharge, 0);
+    }
+
+    public static boolean isPerfectShotNormalized(float normalizedCharge, int mutationLevel) {
         float value = clamp01(normalizedCharge);
-        return value >= perfectShotMinNormalized() && value <= perfectShotMaxNormalized();
+        return value >= perfectShotMinNormalized(mutationLevel)
+                && value <= perfectShotMaxNormalized(mutationLevel);
     }
 
     public static boolean isPerfectShotSeconds(float chargeSeconds) {
+        return isPerfectShotSeconds(chargeSeconds, 0);
+    }
+
+    public static boolean isPerfectShotSeconds(float chargeSeconds, int mutationLevel) {
         float value = clampNonNegative(chargeSeconds);
-        return value >= perfectShotMinSeconds() && value <= perfectShotMaxSeconds();
+        return value >= perfectShotMinSeconds(mutationLevel)
+                && value <= perfectShotMaxSeconds(mutationLevel);
     }
 
     public static int toPercent(float normalizedCharge) {
@@ -97,6 +161,13 @@ public final class BowPerfectShotDefinitions {
     }
 
     public static String perfectWindowLabel() {
-        return toPercent(perfectShotMinNormalized()) + "%-" + toPercent(perfectShotMaxNormalized()) + "%";
+        return perfectWindowLabel(0);
+    }
+
+    public static String perfectWindowLabel(int mutationLevel) {
+        return toPercent(perfectShotMinNormalized(mutationLevel))
+                + "%-"
+                + toPercent(perfectShotMaxNormalized(mutationLevel))
+                + "%";
     }
 }

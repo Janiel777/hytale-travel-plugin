@@ -26,6 +26,8 @@ import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.SoundUtil;
+import com.janiel.hytale.mutations.persistence.MutationsCache;
+import com.janiel.hytale.mutations.persistence.MutationsState;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -116,8 +118,22 @@ public final class PerfectShotProjectileInteraction extends ProjectileInteractio
         }
 
         normalizedCharge = BowPerfectShotDefinitions.normalizeVisualChargeSeconds(chargeSeconds);
+
+        int bowMutationLevel = 0;
+        PlayerRef shooterPlayerRef = commandBuffer.getComponent(
+                shooterRef,
+                PlayerRef.getComponentType()
+        );
+
+        if (shooterPlayerRef != null) {
+            MutationsState mutationState = MutationsCache.getOrLoad(shooterPlayerRef.getUuid());
+            if (mutationState != null) {
+                bowMutationLevel = mutationState.getBowLevel();
+            }
+        }
+
         int chargePercent = BowPerfectShotDefinitions.toPercent(normalizedCharge);
-        boolean perfectShot = BowPerfectShotDefinitions.isPerfectShotSeconds(chargeSeconds);
+        boolean perfectShot = BowPerfectShotDefinitions.isPerfectShotSeconds(chargeSeconds, bowMutationLevel);
         long shotSequence = SHOT_SEQUENCE.incrementAndGet();
 
         LOGGER.atInfo().log("[BowPerfectShot] Projectile firstRun. interactionType=" + interactionType
@@ -126,7 +142,8 @@ public final class PerfectShotProjectileInteraction extends ProjectileInteractio
                 + " maxChargeSeconds=" + maxChargeSeconds
                 + " normalizedCharge=" + normalizedCharge
                 + " chargePercent=" + chargePercent
-                + " perfectWindow=" + BowPerfectShotDefinitions.perfectWindowLabel()
+                + " bowMutationLevel=" + bowMutationLevel
+                + " perfectWindow=" + BowPerfectShotDefinitions.perfectWindowLabel(bowMutationLevel)
                 + " perfectShot=" + perfectShot
                 + " trackerHeld=" + trackerHeld
                 + " shotSequence=" + shotSequence
@@ -221,12 +238,14 @@ public final class PerfectShotProjectileInteraction extends ProjectileInteractio
             LOGGER.atInfo().log("[BowPerfectShot] PERFECT SHOT confirmed at projectile spawn. projectileRef=" + projectileRef
                     + " configId=" + this.config
                     + " shotSequence=" + shotSequence
-                    + " multiplier=" + BowPerfectShotDefinitions.perfectShotDamageMultiplier());
+                    + " bowMutationLevel=" + bowMutationLevel
+                    + " multiplier=" + BowPerfectShotDefinitions.perfectShotDamageMultiplier(bowMutationLevel));
         } else {
             LOGGER.atInfo().log("[BowPerfectShot] Release was NOT a perfect shot. projectileRef=" + projectileRef
                     + " configId=" + this.config
                     + " shotSequence=" + shotSequence
-                    + " perfectWindow=" + BowPerfectShotDefinitions.perfectWindowLabel());
+                    + " bowMutationLevel=" + bowMutationLevel
+                    + " perfectWindow=" + BowPerfectShotDefinitions.perfectWindowLabel(bowMutationLevel));
         }
     }
 

@@ -15,6 +15,8 @@ import com.janiel.hytale.mutations.component.PendingPerfectShotComponent;
 import com.janiel.hytale.mutations.weapon.effects.BowPerfectShotDefinitions;
 import com.hypixel.hytale.component.SystemGroup;
 import com.hypixel.hytale.server.core.modules.entity.damage.DamageModule;
+import com.janiel.hytale.mutations.persistence.MutationsCache;
+import com.janiel.hytale.mutations.persistence.MutationsState;
 
 import java.util.UUID;
 
@@ -121,7 +123,15 @@ public final class BowPerfectShotDamageSystem extends EntityEventSystem<EntitySt
             return;
         }
 
-        float newAmount = oldAmount * BowPerfectShotDefinitions.perfectShotDamageMultiplier();
+        int bowMutationLevel = 0;
+        if (attackerUuid != null) {
+            MutationsState state = MutationsCache.getOrLoad(attackerUuid);
+            if (state != null) {
+                bowMutationLevel = state.getBowLevel();
+            }
+        }
+
+        float newAmount = oldAmount * BowPerfectShotDefinitions.perfectShotDamageMultiplier(bowMutationLevel);
 
         damage.putMetaObject(Damage.CAN_BE_PREDICTED, false);
         damage.setAmount(newAmount);
@@ -132,7 +142,8 @@ public final class BowPerfectShotDamageSystem extends EntityEventSystem<EntitySt
                 + " projectileConfigId=" + pending.getProjectileConfigId()
                 + " oldAmount=" + oldAmount
                 + " newAmount=" + newAmount
-                + " multiplier=" + BowPerfectShotDefinitions.perfectShotDamageMultiplier());
+                + " bowMutationLevel=" + bowMutationLevel
+                + " multiplier=" + BowPerfectShotDefinitions.perfectShotDamageMultiplier(bowMutationLevel));
 
         commandBuffer.tryRemoveComponent(attackerRef, PendingPerfectShotComponent.getComponentType());
     }
