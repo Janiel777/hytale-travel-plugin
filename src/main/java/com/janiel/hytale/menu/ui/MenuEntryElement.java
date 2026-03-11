@@ -14,16 +14,27 @@ public final class MenuEntryElement extends ChoiceElement {
     private final String name;
     private final String description;
     private final String tag;
+    private final String containerSelector;
 
     public MenuEntryElement(
             @Nonnull String name,
             @Nonnull String description,
             @Nonnull String tag
     ) {
+        this(name, description, tag, "#ElementList");
+    }
+
+    public MenuEntryElement(
+            @Nonnull String name,
+            @Nonnull String description,
+            @Nonnull String tag,
+            @Nonnull String containerSelector
+    ) {
         super(name, description, new ChoiceInteraction[0], new ChoiceRequirement[0]);
         this.name = name;
         this.description = description;
         this.tag = tag;
+        this.containerSelector = containerSelector;
     }
 
     @Override
@@ -33,7 +44,7 @@ public final class MenuEntryElement extends ChoiceElement {
             @Nonnull String selector,
             @Nonnull PlayerRef playerRef
     ) {
-        commands.append("#ElementList", "Pages/JanielMenu/MenuEntryButton.ui");
+        commands.append(containerSelector, "Pages/JanielMenu/MenuEntryButton.ui");
         commands.set(selector + " #Name.Text", name);
         commands.set(selector + " #Description.Text", description);
         commands.set(selector + " #Tag.Text", tag);

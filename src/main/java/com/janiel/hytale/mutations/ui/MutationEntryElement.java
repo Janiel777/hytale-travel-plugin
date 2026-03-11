@@ -15,29 +15,40 @@ public final class MutationEntryElement extends ChoiceElement {
     private final String description;
     private final String levelLabel;
     private final String progressLabel;
+    private final String containerSelector;
 
-    public MutationEntryElement(@Nonnull String name,
-                                @Nonnull String description,
-                                @Nonnull String levelLabel,
-                                @Nonnull String progressLabel) {
+    public MutationEntryElement(
+            @Nonnull String name,
+            @Nonnull String description,
+            @Nonnull String levelLabel,
+            @Nonnull String progressLabel
+    ) {
+        this(name, description, levelLabel, progressLabel, "#ElementList");
+    }
 
+    public MutationEntryElement(
+            @Nonnull String name,
+            @Nonnull String description,
+            @Nonnull String levelLabel,
+            @Nonnull String progressLabel,
+            @Nonnull String containerSelector
+    ) {
         super(name, description, new ChoiceInteraction[0], new ChoiceRequirement[0]);
         this.name = name;
         this.description = description;
         this.levelLabel = levelLabel;
         this.progressLabel = progressLabel;
+        this.containerSelector = containerSelector;
     }
 
     @Override
-    public void addButton(@Nonnull UICommandBuilder commands,
-                          @Nonnull UIEventBuilder events,
-                          @Nonnull String selector,
-                          @Nonnull PlayerRef playerRef) {
-
-        // Append our custom entry template into the list container in MutationsHome.ui
-        commands.append("#ElementList", "Pages/JanielMutations/MutationEntryButton.ui");
-
-        // Set text on our labels (ids defined in MutationEntryButton.ui)
+    public void addButton(
+            @Nonnull UICommandBuilder commands,
+            @Nonnull UIEventBuilder events,
+            @Nonnull String selector,
+            @Nonnull PlayerRef playerRef
+    ) {
+        commands.append(containerSelector, "Pages/JanielMutations/MutationEntryButton.ui");
         commands.set(selector + " #Name.Text", name);
         commands.set(selector + " #Description.Text", description);
         commands.set(selector + " #Level.Text", levelLabel);

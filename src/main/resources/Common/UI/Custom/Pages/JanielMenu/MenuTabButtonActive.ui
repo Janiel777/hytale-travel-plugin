@@ -1,0 +1,14 @@
+Button #Button {
+  Padding: (Left: 16, Right: 16, Top: 10, Bottom: 10);
+  Background: #000000(0.18);
+
+  Style: (
+    Hovered: (
+      Background: #ffffff(0.08),
+    )
+  );
+
+  Label #Label {
+    Style: (RenderBold: true, TextColor: #ffffff(0.72));
+  }
+}

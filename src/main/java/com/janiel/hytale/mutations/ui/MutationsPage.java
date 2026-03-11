@@ -16,12 +16,15 @@ public final class MutationsPage extends ChoiceBasePage {
     }
 
     public static MutationsPage create(@Nonnull PlayerRef playerRef) {
+        return new MutationsPage(playerRef, createElements(playerRef, "#ElementList"));
+    }
 
+    public static ChoiceElement[] createElements(
+            @Nonnull PlayerRef playerRef,
+            @Nonnull String containerSelector
+    ) {
         MutationsState state = MutationsRepository.getOrLoadState(playerRef.getUuid());
 
-        // -----------------------------
-        // Mining
-        // -----------------------------
         int blocksMined = state.getBlocksBroken();
         int miningLevel = state.getMiningLevel();
         int nextMiningLevelAt = MutationsProgression.miningGoalForLevel(miningLevel);
@@ -31,9 +34,6 @@ public final class MutationsPage extends ChoiceBasePage {
         String miningLevelLabel = "Level " + miningLevel;
         String miningProgressLabel = blocksMined + "/" + nextMiningLevelAt + " blocks";
 
-        // -----------------------------
-        // Stamina
-        // -----------------------------
         int staminaDepletions = state.getStaminaDepletions();
         int staminaDelayLevel = state.getStaminaDelayLevel();
         int nextStaminaLevelAt = MutationsProgression.staminaDepletionsGoalForLevel(staminaDelayLevel);
@@ -53,11 +53,6 @@ public final class MutationsPage extends ChoiceBasePage {
                     + " depletions (-" + extraDelaySeconds + "s extra delay, x" + regenMultiplier + " regen)";
         }
 
-        // -----------------------------
-        // Weapons
-        // -----------------------------
-
-        // SWORD
         int swordKills = state.getSwordKills();
         int swordLevel = state.getSwordLevel();
         int swordNextAt = MutationsProgression.swordKillsGoalForLevel(swordLevel);
@@ -69,7 +64,6 @@ public final class MutationsPage extends ChoiceBasePage {
                 ? (swordKills + " kills (MAX)")
                 : (swordKills + "/" + swordNextAt + " kills");
 
-        // AXE
         int axeKills = state.getAxeKills();
         int axeLevel = state.getAxeLevel();
         int axeNextAt = MutationsProgression.axeKillsGoalForLevel(axeLevel);
@@ -81,7 +75,6 @@ public final class MutationsPage extends ChoiceBasePage {
                 ? (axeKills + " kills (MAX)")
                 : (axeKills + "/" + axeNextAt + " kills");
 
-        // MACE
         int maceKills = state.getMaceKills();
         int maceLevel = state.getMaceLevel();
         int maceNextAt = MutationsProgression.maceKillsGoalForLevel(maceLevel);
@@ -93,7 +86,6 @@ public final class MutationsPage extends ChoiceBasePage {
                 ? (maceKills + " kills (MAX)")
                 : (maceKills + "/" + maceNextAt + " kills");
 
-        // SPEAR
         int spearKills = state.getSpearKills();
         int spearLevel = state.getSpearLevel();
         int spearNextAt = MutationsProgression.spearKillsGoalForLevel(spearLevel);
@@ -105,7 +97,6 @@ public final class MutationsPage extends ChoiceBasePage {
                 ? (spearKills + " kills (MAX)")
                 : (spearKills + "/" + spearNextAt + " kills");
 
-        // DAGGER
         int daggerKills = state.getDaggerKills();
         int daggerLevel = state.getDaggerLevel();
         int daggerNextAt = MutationsProgression.daggerKillsGoalForLevel(daggerLevel);
@@ -117,7 +108,6 @@ public final class MutationsPage extends ChoiceBasePage {
                 ? (daggerKills + " kills (MAX)")
                 : (daggerKills + "/" + daggerNextAt + " kills");
 
-        // BOW
         int bowKills = state.getBowKills();
         int bowLevel = state.getBowLevel();
         int bowNextAt = MutationsProgression.bowKillsGoalForLevel(bowLevel);
@@ -129,7 +119,6 @@ public final class MutationsPage extends ChoiceBasePage {
                 ? (bowKills + " kills (MAX)")
                 : (bowKills + "/" + bowNextAt + " kills");
 
-        // CROSSBOW
         int crossbowKills = state.getCrossbowKills();
         int crossbowLevel = state.getCrossbowLevel();
         int crossbowNextAt = MutationsProgression.crossbowKillsGoalForLevel(crossbowLevel);
@@ -141,7 +130,6 @@ public final class MutationsPage extends ChoiceBasePage {
                 ? (crossbowKills + " kills (MAX)")
                 : (crossbowKills + "/" + crossbowNextAt + " kills");
 
-        // GUN
         int gunKills = state.getGunKills();
         int gunLevel = state.getGunLevel();
         int gunNextAt = MutationsProgression.gunKillsGoalForLevel(gunLevel);
@@ -153,7 +141,6 @@ public final class MutationsPage extends ChoiceBasePage {
                 ? (gunKills + " kills (MAX)")
                 : (gunKills + "/" + gunNextAt + " kills");
 
-        // MAGIC
         int magicKills = state.getMagicKills();
         int magicLevel = state.getMagicLevel();
         int magicNextAt = MutationsProgression.magicKillsGoalForLevel(magicLevel);
@@ -165,7 +152,6 @@ public final class MutationsPage extends ChoiceBasePage {
                 ? (magicKills + " kills (MAX)")
                 : (magicKills + "/" + magicNextAt + " kills");
 
-        // THROWABLE
         int throwableKills = state.getThrowableKills();
         int throwableLevel = state.getThrowableLevel();
         int throwableNextAt = MutationsProgression.throwableKillsGoalForLevel(throwableLevel);
@@ -177,22 +163,20 @@ public final class MutationsPage extends ChoiceBasePage {
                 ? (throwableKills + " kills (MAX)")
                 : (throwableKills + "/" + throwableNextAt + " kills");
 
-        ChoiceElement[] elements = new ChoiceElement[] {
-                new MutationEntryElement(miningName, miningDescription, miningLevelLabel, miningProgressLabel),
-                new MutationEntryElement(staminaName, staminaDescription, staminaLevelLabel, staminaProgressLabel),
+        return new ChoiceElement[] {
+                new MutationEntryElement(miningName, miningDescription, miningLevelLabel, miningProgressLabel, containerSelector),
+                new MutationEntryElement(staminaName, staminaDescription, staminaLevelLabel, staminaProgressLabel, containerSelector),
 
-                new MutationEntryElement(swordName, swordDescription, swordLevelLabel, swordProgressLabel),
-                new MutationEntryElement(axeName, axeDescription, axeLevelLabel, axeProgressLabel),
-                new MutationEntryElement(maceName, maceDescription, maceLevelLabel, maceProgressLabel),
-                new MutationEntryElement(spearName, spearDescription, spearLevelLabel, spearProgressLabel),
-                new MutationEntryElement(daggerName, daggerDescription, daggerLevelLabel, daggerProgressLabel),
-                new MutationEntryElement(bowName, bowDescription, bowLevelLabel, bowProgressLabel),
-                new MutationEntryElement(crossbowName, crossbowDescription, crossbowLevelLabel, crossbowProgressLabel),
-                new MutationEntryElement(gunName, gunDescription, gunLevelLabel, gunProgressLabel),
-                new MutationEntryElement(magicName, magicDescription, magicLevelLabel, magicProgressLabel),
-                new MutationEntryElement(throwableName, throwableDescription, throwableLevelLabel, throwableProgressLabel)
+                new MutationEntryElement(swordName, swordDescription, swordLevelLabel, swordProgressLabel, containerSelector),
+                new MutationEntryElement(axeName, axeDescription, axeLevelLabel, axeProgressLabel, containerSelector),
+                new MutationEntryElement(maceName, maceDescription, maceLevelLabel, maceProgressLabel, containerSelector),
+                new MutationEntryElement(spearName, spearDescription, spearLevelLabel, spearProgressLabel, containerSelector),
+                new MutationEntryElement(daggerName, daggerDescription, daggerLevelLabel, daggerProgressLabel, containerSelector),
+                new MutationEntryElement(bowName, bowDescription, bowLevelLabel, bowProgressLabel, containerSelector),
+                new MutationEntryElement(crossbowName, crossbowDescription, crossbowLevelLabel, crossbowProgressLabel, containerSelector),
+                new MutationEntryElement(gunName, gunDescription, gunLevelLabel, gunProgressLabel, containerSelector),
+                new MutationEntryElement(magicName, magicDescription, magicLevelLabel, magicProgressLabel, containerSelector),
+                new MutationEntryElement(throwableName, throwableDescription, throwableLevelLabel, throwableProgressLabel, containerSelector)
         };
-
-        return new MutationsPage(playerRef, elements);
     }
 }

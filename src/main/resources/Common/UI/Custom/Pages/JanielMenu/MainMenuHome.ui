@@ -3,12 +3,12 @@ $C = "../../Common.ui";
 $C.@PageOverlay {}
 
 $C.@Container {
-  Anchor: (Width: 800, Height: 720);
+  Anchor: (Width: 1400, Height: 900);
 
   #Title {
     Group {
       $C.@Title {
-        @Text = "MAIN MENU";
+        @Text = "MENU";
       }
 
       $C.@HeaderSearch {}
@@ -16,13 +16,66 @@ $C.@Container {
   }
 
   #Content {
-    LayoutMode: Left;
-    Padding: (Full: 10);
+    LayoutMode: Top;
+    Padding: (Full: 12);
 
-    Group #ElementList {
+    Group #TabsPanel {
+      LayoutMode: Left;
+      Padding: (Full: 6);
+      Background: #000000(0.18);
+
+      Group #TabsList {
+        LayoutMode: Left;
+      }
+    }
+
+    Group {
+      Anchor: (Height: 10);
+    }
+
+    Group #BodyPanel {
       FlexWeight: 1;
-      LayoutMode: TopScrolling;
-      ScrollbarStyle: $C.@DefaultScrollbarStyle;
+      LayoutMode: Left;
+
+      Group #SidebarPanel {
+        Anchor: (Width: 320);
+        Padding: (Full: 8);
+        Background: #000000(0.18);
+        LayoutMode: TopScrolling;
+        ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
+        Label {
+          Text: "OVERVIEW";
+          Padding: (Left: 6, Bottom: 8);
+          Style: (RenderBold: true, TextColor: #ffffff(0.75));
+        }
+
+        Group #SidebarList {
+          LayoutMode: Top;
+        }
+      }
+
+      Group {
+        Anchor: (Width: 10);
+      }
+
+      Group #MainPanel {
+        FlexWeight: 1;
+        Padding: (Full: 8);
+        Background: #000000(0.18);
+        LayoutMode: TopScrolling;
+        ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
+        Label {
+          Text: "DETAILS";
+          Padding: (Left: 6, Bottom: 8);
+          Style: (RenderBold: true, TextColor: #ffffff(0.75));
+        }
+
+        Group #ElementList {
+          LayoutMode: Top;
+        }
+      }
     }
   }
 }
