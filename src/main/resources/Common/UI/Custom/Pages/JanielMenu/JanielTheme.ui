@@ -1,0 +1,25 @@
+@MenuPanelBg = #173552(0.72);
+@TileBg = #214d75(0.82);
+@TileHoverBg = #2d6796(0.92);
+@PillBg = #234867(0.92);
+@IconBg = #234867(0.85);
+@EntryHoverBg = #2a5b86(0.38);
+@TilePipOn = #7edb61(0.98);
+@TilePipOff = #5c7691(0.95);
+@DetailRowBg = #11273d(0.78);
+
+@SectionLabelText = #e5f2ff(0.96);
+@SubsectionLabelText = #c6dcf2(0.92);
+@PrimaryText = #edf6ff(0.94);
+@BodyText = #d6e7f6(0.90);
+@DescriptionText = #b6cde2(0.86);
+@MutedText = #90a9c0(0.88);
+@StrongText = #ffffff(0.99);
+
+@TabActiveBg = #2c5f8b(0.95);
+@TabInactiveBg = #16314c(0.78);
+@TabActiveText = #ffffff(0.99);
+@TabInactiveText = #bfd5ea(0.88);
+@TagText = #d7e7f6(0.90);
+
+@PlaceholderTex = PatchStyle(TexturePath: "../../MenuPage/placeholder.png");

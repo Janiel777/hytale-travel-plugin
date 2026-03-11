@@ -1,0 +1,47 @@
+$C = "../../Common.ui";
+$T = "JanielTheme.ui";
+
+Group #BodyPanel {
+  FlexWeight: 1;
+  LayoutMode: Left;
+
+  Group #OverviewPanel {
+    Anchor: (Width: 320);
+    Padding: (Full: 8);
+    Background: $T.@MenuPanelBg;
+    LayoutMode: TopScrolling;
+    ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
+    Label {
+      Text: "OVERVIEW";
+      Padding: (Left: 6, Bottom: 8);
+      Style: (RenderBold: true, TextColor: $T.@SectionLabelText);
+    }
+
+    Group #EquipmentOverviewList {
+      LayoutMode: Top;
+    }
+  }
+
+  Group {
+    Anchor: (Width: 10);
+  }
+
+  Group #DetailsPanel {
+    FlexWeight: 1;
+    Padding: (Full: 8);
+    Background: $T.@MenuPanelBg;
+    LayoutMode: TopScrolling;
+    ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
+    Label {
+      Text: "DETAILS";
+      Padding: (Left: 6, Bottom: 8);
+      Style: (RenderBold: true, TextColor: $T.@SectionLabelText);
+    }
+
+    Group #EquipmentDetailsList {
+      LayoutMode: Top;
+    }
+  }
+}

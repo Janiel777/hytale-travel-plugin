@@ -1,0 +1,39 @@
+$T = "JanielTheme.ui";
+
+Button #Button {
+  Anchor: (Width: 132, Height: 116, Right: 8, Bottom: 8);
+  Padding: (Full: 8);
+  Background: $T.@TileBg;
+  LayoutMode: Top;
+
+  Style: (
+    Hovered: (
+      Background: $T.@TileHoverBg,
+    )
+  );
+
+  Group #IconHost {
+    Anchor: (Height: 84);
+    LayoutMode: Top;
+  }
+
+  Group {
+    Anchor: (Height: 10);
+  }
+
+  Group #LevelRowWrap {
+    LayoutMode: Left;
+
+    Group {
+      FlexWeight: 1;
+    }
+
+    Group #LevelRowHost {
+      LayoutMode: Left;
+    }
+
+    Group {
+      FlexWeight: 1;
+    }
+  }
+}

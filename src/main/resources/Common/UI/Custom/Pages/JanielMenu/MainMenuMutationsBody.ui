@@ -1,0 +1,101 @@
+$C = "../../Common.ui";
+$T = "JanielTheme.ui";
+
+Group #BodyPanel {
+  FlexWeight: 1;
+  LayoutMode: Left;
+
+  Group #MutationsPanel {
+    Anchor: (Width: 900);
+    Padding: (Full: 8);
+    Background: $T.@MenuPanelBg;
+    LayoutMode: TopScrolling;
+    ScrollbarStyle: $C.@DefaultScrollbarStyle;
+    KeepScrollPosition: true;
+
+    Label {
+      Text: "MUTATIONS";
+      Padding: (Left: 6, Bottom: 8);
+      Style: (RenderBold: true, TextColor: $T.@SectionLabelText);
+    }
+
+    Group #MutationCatalogList {
+      LayoutMode: Top;
+
+      Label {
+        Text: "FOUNDATIONS";
+        Padding: (Left: 4, Bottom: 6);
+        Style: (RenderBold: true, TextColor: $T.@SubsectionLabelText);
+      }
+
+      Group #FoundationsRow {
+        LayoutMode: Left;
+      }
+
+      Group {
+        Anchor: (Height: 12);
+      }
+
+      Label {
+        Text: "MELEE MASTERIES";
+        Padding: (Left: 4, Bottom: 6);
+        Style: (RenderBold: true, TextColor: $T.@SubsectionLabelText);
+      }
+
+      Group #MeleeRowOne {
+        LayoutMode: Left;
+      }
+
+      Group {
+        Anchor: (Height: 12);
+      }
+
+      Label {
+        Text: "RANGED MASTERIES";
+        Padding: (Left: 4, Bottom: 6);
+        Style: (RenderBold: true, TextColor: $T.@SubsectionLabelText);
+      }
+
+      Group #RangedRowOne {
+        LayoutMode: Left;
+      }
+
+      Group {
+        Anchor: (Height: 12);
+      }
+
+      Label {
+        Text: "ARCANE & UTILITY";
+        Padding: (Left: 4, Bottom: 6);
+        Style: (RenderBold: true, TextColor: $T.@SubsectionLabelText);
+      }
+
+      Group #SpecialRowOne {
+        LayoutMode: Left;
+      }
+    }
+  }
+
+  Group {
+    Anchor: (Width: 10);
+  }
+
+  Group #DetailsPanel {
+    FlexWeight: 1;
+    Padding: (Full: 8);
+    Background: $T.@MenuPanelBg;
+    LayoutMode: TopScrolling;
+    ScrollbarStyle: $C.@DefaultScrollbarStyle;
+    KeepScrollPosition: true;
+
+    Label {
+      Text: "DETAILS";
+      Padding: (Left: 6, Bottom: 8);
+      Style: (RenderBold: true, TextColor: $T.@SectionLabelText);
+    }
+
+    Group #MutationDetailsList {
+      LayoutMode: Top;
+    }
+  }
+}

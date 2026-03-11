@@ -1,0 +1,6 @@
+$T = "JanielTheme.ui";
+
+Group #Icon {
+  Anchor: (Height: 84);
+  Background: $T.@PlaceholderTex;
+}

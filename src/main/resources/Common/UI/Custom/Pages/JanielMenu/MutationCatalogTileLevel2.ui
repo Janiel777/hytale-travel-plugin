@@ -1,0 +1,28 @@
+$T = "JanielTheme.ui";
+
+Group #LevelRow {
+  LayoutMode: Left;
+
+  Group {
+    Anchor: (Width: 18, Height: 6);
+    Background: $T.@TilePipOn;
+  }
+
+  Group {
+    Anchor: (Width: 4);
+  }
+
+  Group {
+    Anchor: (Width: 18, Height: 6);
+    Background: $T.@TilePipOn;
+  }
+
+  Group {
+    Anchor: (Width: 4);
+  }
+
+  Group {
+    Anchor: (Width: 18, Height: 6);
+    Background: $T.@TilePipOff;
+  }
+}

@@ -1,0 +1,134 @@
+$T = "JanielTheme.ui";
+
+Group #Card {
+  LayoutMode: Top;
+  Padding: (Full: 8);
+
+  Group {
+    LayoutMode: Left;
+
+    Group #LevelPill {
+      Padding: (Left: 8, Right: 8, Top: 4, Bottom: 4);
+      Background: $T.@PillBg;
+
+      Label #Level {
+        Style: (TextColor: $T.@PrimaryText);
+      }
+    }
+
+    Group {
+      Anchor: (Width: 8);
+    }
+
+    Group #ProgressPill {
+      Padding: (Left: 8, Right: 8, Top: 4, Bottom: 4);
+      Background: $T.@PillBg;
+
+      Label #Progress {
+        Style: (TextColor: $T.@PrimaryText);
+      }
+    }
+  }
+
+  Group {
+    Anchor: (Height: 12);
+  }
+
+  Label #Name {
+    Style: (RenderBold: true, TextColor: $T.@StrongText);
+  }
+
+  Label #Description {
+    Style: (TextColor: $T.@DescriptionText);
+  }
+
+  Group {
+    Anchor: (Height: 14);
+  }
+
+  Label {
+    Text: "TIER TRACK";
+    Padding: (Left: 2, Bottom: 6);
+    Style: (RenderBold: true, TextColor: $T.@SubsectionLabelText);
+  }
+
+  Group {
+    Padding: (Left: 8, Right: 8, Top: 6, Bottom: 6);
+    Background: $T.@DetailRowBg;
+
+    Label #Tier1 {
+      Style: (TextColor: $T.@BodyText);
+    }
+  }
+
+  Group {
+    Anchor: (Height: 6);
+  }
+
+  Group {
+    Padding: (Left: 8, Right: 8, Top: 6, Bottom: 6);
+    Background: $T.@DetailRowBg;
+
+    Label #Tier2 {
+      Style: (TextColor: $T.@BodyText);
+    }
+  }
+
+  Group {
+    Anchor: (Height: 6);
+  }
+
+  Group {
+    Padding: (Left: 8, Right: 8, Top: 6, Bottom: 6);
+    Background: $T.@DetailRowBg;
+
+    Label #Tier3 {
+      Style: (TextColor: $T.@BodyText);
+    }
+  }
+
+  Group {
+    Anchor: (Height: 14);
+  }
+
+  Label {
+    Text: "CURRENT SUMMARY";
+    Padding: (Left: 2, Bottom: 6);
+    Style: (RenderBold: true, TextColor: $T.@SubsectionLabelText);
+  }
+
+  Group {
+    Padding: (Left: 8, Right: 8, Top: 6, Bottom: 6);
+    Background: $T.@DetailRowBg;
+
+    Label #Summary1 {
+      Style: (TextColor: $T.@BodyText);
+    }
+  }
+
+  Group {
+    Anchor: (Height: 6);
+  }
+
+  Group {
+    Padding: (Left: 8, Right: 8, Top: 6, Bottom: 6);
+    Background: $T.@DetailRowBg;
+
+    Label #Summary2 {
+      Style: (TextColor: $T.@BodyText);
+    }
+  }
+
+  Group {
+    Anchor: (Height: 6);
+  }
+
+  Group {
+    Padding: (Left: 8, Right: 8, Top: 6, Bottom: 6);
+    Background: $T.@DetailRowBg;
+
+    Label #Summary3 {
+      Style: (TextColor: $T.@BodyText);
+    }
+  }
+}

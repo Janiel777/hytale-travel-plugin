@@ -1,14 +1,16 @@
+$T = "JanielTheme.ui";
+
 Button #Button {
   Padding: (Left: 16, Right: 16, Top: 10, Bottom: 10);
-  Background: #000000(0.18);
+  Background: $T.@TabInactiveBg;
 
   Style: (
     Hovered: (
-      Background: #ffffff(0.08),
+      Background: $T.@TileHoverBg,
     )
   );
 
   Label #Label {
-    Style: (RenderBold: true, TextColor: #ffffff(0.72));
+    Style: (RenderBold: true, TextColor: $T.@TabInactiveText);
   }
 }

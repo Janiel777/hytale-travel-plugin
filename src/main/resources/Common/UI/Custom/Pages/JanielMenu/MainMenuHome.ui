@@ -1,14 +1,15 @@
 $C = "../../Common.ui";
+$T = "JanielTheme.ui";
 
 $C.@PageOverlay {}
 
 $C.@Container {
-  Anchor: (Width: 1400, Height: 900);
+  Anchor: (Width: 1500, Height: 760);
 
   #Title {
     Group {
       $C.@Title {
-        @Text = "MENU";
+        @Text = "PLAYER MENU";
       }
 
       $C.@HeaderSearch {}
@@ -22,7 +23,7 @@ $C.@Container {
     Group #TabsPanel {
       LayoutMode: Left;
       Padding: (Full: 6);
-      Background: #000000(0.18);
+      Background: $T.@MenuPanelBg;
 
       Group #TabsList {
         LayoutMode: Left;
@@ -33,49 +34,14 @@ $C.@Container {
       Anchor: (Height: 10);
     }
 
-    Group #BodyPanel {
+    Group #BodyHost {
       FlexWeight: 1;
-      LayoutMode: Left;
+      LayoutMode: Top;
+    }
 
-      Group #SidebarPanel {
-        Anchor: (Width: 320);
-        Padding: (Full: 8);
-        Background: #000000(0.18);
-        LayoutMode: TopScrolling;
-        ScrollbarStyle: $C.@DefaultScrollbarStyle;
-
-        Label {
-          Text: "OVERVIEW";
-          Padding: (Left: 6, Bottom: 8);
-          Style: (RenderBold: true, TextColor: #ffffff(0.75));
-        }
-
-        Group #SidebarList {
-          LayoutMode: Top;
-        }
-      }
-
-      Group {
-        Anchor: (Width: 10);
-      }
-
-      Group #MainPanel {
-        FlexWeight: 1;
-        Padding: (Full: 8);
-        Background: #000000(0.18);
-        LayoutMode: TopScrolling;
-        ScrollbarStyle: $C.@DefaultScrollbarStyle;
-
-        Label {
-          Text: "DETAILS";
-          Padding: (Left: 6, Bottom: 8);
-          Style: (RenderBold: true, TextColor: #ffffff(0.75));
-        }
-
-        Group #ElementList {
-          LayoutMode: Top;
-        }
-      }
+    Group #ElementList {
+      Anchor: (Width: 0, Height: 0);
+      LayoutMode: Top;
     }
   }
 }
