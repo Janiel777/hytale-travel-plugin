@@ -1,0 +1,45 @@
+Button #Button {
+  Padding: (Full: 10);
+  LayoutMode: Left;
+
+  Style: (
+    Hovered: (
+      Background: #000000(0.2),
+    )
+  );
+
+  Group #Icon {
+    Anchor: (Width: 48, Height: 48);
+    Background: #000000(0.25);
+  }
+
+  Group {
+    Anchor: (Width: 12);
+  }
+
+  Group {
+    FlexWeight: 1;
+    LayoutMode: Top;
+
+    Label #Name {
+      Style: (RenderBold: true);
+    }
+
+    Label #Description {
+      Style: (TextColor: #ffffff(0.6));
+    }
+
+    Group {
+      Anchor: (Height: 6);
+    }
+
+    Group #TagPill {
+      Padding: (Left: 8, Right: 8, Top: 3, Bottom: 3);
+      Background: #000000(0.25);
+
+      Label #Tag {
+        Style: (TextColor: #ffffff(0.75));
+      }
+    }
+  }
+}

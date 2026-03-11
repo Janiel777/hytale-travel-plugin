@@ -12,7 +12,7 @@ import com.hypixel.hytale.server.core.io.adapter.PlayerPacketFilter;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.janiel.hytale.mutations.ui.MutationsPage;
+import com.janiel.hytale.menu.ui.MainMenuPage;
 
 public final class OKeyInputProbe {
 
@@ -51,9 +51,9 @@ public final class OKeyInputProbe {
                 + " uuid=" + playerRef.getUuid()
                 + " message=" + message);
 
-        openMutationsPage(playerRef);
+        openMainMenuPage(playerRef);
 
-        LOGGER.atInfo().log("[OKeyInputProbe] Blocked hidden O command and scheduled Mutations page open. player="
+        LOGGER.atInfo().log("[OKeyInputProbe] Blocked hidden O command and scheduled Main Menu page open. player="
                 + playerRef.getUsername()
                 + " uuid=" + playerRef.getUuid()
                 + " message=" + message);
@@ -69,7 +69,7 @@ public final class OKeyInputProbe {
     }
 
     @SuppressWarnings("unchecked")
-    private static void openMutationsPage(PlayerRef playerRef) {
+    private static void openMainMenuPage(PlayerRef playerRef) {
         Ref<EntityStore> ref = playerRef.getReference();
         if (ref == null || !ref.isValid()) {
             LOGGER.atWarning().log("[OKeyInputProbe] Could not schedule Mutations page open because player ref was null/invalid. uuid="
@@ -119,9 +119,9 @@ public final class OKeyInputProbe {
                 return;
             }
 
-            pages.openCustomPage(ref, store, MutationsPage.create(playerRef));
+            pages.openCustomPage(ref, store, MainMenuPage.create(playerRef));
 
-            LOGGER.atInfo().log("[OKeyInputProbe] Mutations page opened from O key. player="
+            LOGGER.atInfo().log("[OKeyInputProbe] Main Menu page opened from O key. player="
                     + playerRef.getUsername()
                     + " uuid=" + playerRef.getUuid());
         });
