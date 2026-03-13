@@ -1,0 +1,28 @@
+{
+  "Type": "EffectCondition",
+  "EntityEffectIds": [
+    "Janiel_Crossbow_Reload_Tag_T3"
+  ],
+  "Match": "All",
+  "Entity": "User",
+  "Next": "Janiel_Weapon_Crossbow_Reload_Effects_T3",
+  "Failed": {
+    "Type": "EffectCondition",
+    "EntityEffectIds": [
+      "Janiel_Crossbow_Reload_Tag_T2"
+    ],
+    "Match": "All",
+    "Entity": "User",
+    "Next": "Janiel_Weapon_Crossbow_Reload_Effects_T2",
+    "Failed": {
+      "Type": "EffectCondition",
+      "EntityEffectIds": [
+        "Janiel_Crossbow_Reload_Tag_T1"
+      ],
+      "Match": "All",
+      "Entity": "User",
+      "Next": "Janiel_Weapon_Crossbow_Reload_Effects_T1",
+      "Failed": "Janiel_Weapon_Crossbow_Reload_Effects_Base"
+    }
+  }
+}

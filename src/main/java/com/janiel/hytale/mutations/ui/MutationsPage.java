@@ -480,9 +480,9 @@ public final class MutationsPage extends ChoiceBasePage {
                 tierLine(current, 50, "Tier 1 - Defeat 50 enemies with crossbows"),
                 tierLine(current, 150, "Tier 2 - Defeat 150 enemies with crossbows"),
                 tierLine(current, 300, "Tier 3 - Defeat 300 enemies with crossbows"),
-                "Progression is tracked and persisted.",
-                nextTierLine(level, nextGoal, "kills"),
-                "No crossbow passive hook is wired yet."
+                "Current reload time per bolt: " + formatFloat(WeaponEffectDefinitions.crossbowReloadSecondsForLevel(level)) + "s.",
+                "While holding a crossbow, the plugin applies a hidden reload tier tag.",
+                nextTierLine(level, nextGoal, "kills")
         );
     }
 

@@ -50,6 +50,7 @@ import com.janiel.hytale.mutations.interaction.PerfectShotProjectileInteraction;
 import com.janiel.hytale.mutations.component.BowPerfectShotChargeTrackerComponent;
 import com.janiel.hytale.mutations.component.PendingPerfectShotComponent;
 import com.janiel.hytale.mutations.system.BowPerfectShotHudCleanupSystem;
+import com.janiel.hytale.mutations.system.CrossbowReloadMutationSystem;
 import com.janiel.hytale.input.OKeyInputProbe;
 
 import javax.annotation.Nonnull;
@@ -234,6 +235,9 @@ public class HytalePlugin extends JavaPlugin {
 
         getEntityStoreRegistry().registerSystem(new BowPerfectShotHudCleanupSystem());
         LOGGER.atInfo().log("Combat: BowPerfectShotHudCleanupSystem registered (DelayedEntitySystem)");
+
+        getEntityStoreRegistry().registerSystem(new CrossbowReloadMutationSystem());
+        LOGGER.atInfo().log("Combat: CrossbowReloadMutationSystem registered (DelayedEntitySystem)");
 
         LOGGER.atInfo().log("HytaleTravel setup done");
     }

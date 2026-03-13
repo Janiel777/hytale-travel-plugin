@@ -167,6 +167,30 @@ public final class WeaponEffectDefinitions {
         return dps / ticksPerSecond;
     }
 
+    // --------------------------------------------------------------------------------------------
+    // Crossbow mastery: reload tier tags + per-bolt reload timing
+    // --------------------------------------------------------------------------------------------
+
+    public static int crossbowReloadTierFromMutationLevel(int level) {
+        if (level <= 0) return 0;
+        if (level == 1) return 1;
+        if (level == 2) return 2;
+        return 3;
+    }
+
+    public static String crossbowReloadEffectIdForLevel(int level) {
+        if (level <= 0) return null;
+        if (level == 1) return "Janiel_Crossbow_Reload_Tag_T1";
+        if (level == 2) return "Janiel_Crossbow_Reload_Tag_T2";
+        return "Janiel_Crossbow_Reload_Tag_T3";
+    }
+
+    public static float crossbowReloadSecondsForLevel(int level) {
+        if (level <= 0) return 0.30f;
+        if (level == 1) return 0.26f;
+        if (level == 2) return 0.22f;
+        return 0.05f;
+    }
 
     // --------------------------------------------------------------------------------------------
     // Spear mastery: Knockback (keep distance)
